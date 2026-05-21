@@ -1106,6 +1106,14 @@ function showTeamFiche(teamName, group) {
     <div class="fiche-section-title">🏆 Titres</div>
     <div class="fiche-titles-list">${titreHTML}</div>
   `;
+  const starsHTML = data.stars ? data.stars.map(function(s){ return '<div class="fiche-title-badge">' + s.nom + ' <span style="opacity:0.7;font-size:12px">(' + s.club + ')</span></div>'; }).join('') : '<span class="no-titre">Non disponible</span>';
+  $('ficheStars').innerHTML = '<div class="fiche-section-title">⭐ Stars actuelles</div><div class="fiche-titles-list">' + starsHTML + '</div>';
+
+  const buteursHTML = data.buteurs ? data.buteurs.map(function(s){ return '<div class="fiche-title-badge">' + s.nom + ' <span style="opacity:0.7;font-size:12px">(' + s.buts + ' buts)</span></div>'; }).join('') : '<span class="no-titre">Non disponible</span>';
+  $('ficheButeurs').innerHTML = '<div class="fiche-section-title">⚽ Meilleurs buteurs</div><div class="fiche-titles-list">' + buteursHTML + '</div>';
+
+  const passeursHTML = data.passeurs ? data.passeurs.map(function(s){ return '<div class="fiche-title-badge">' + s.nom + ' <span style="opacity:0.7;font-size:12px">(' + s.passes + ' passes)</span></div>'; }).join('') : '<span class="no-titre">Non disponible</span>';
+  $('fichePasseurs').innerHTML = '<div class="fiche-section-title">🎯 Meilleurs passeurs</div><div class="fiche-titles-list">' + passeursHTML + '</div>';
 
   const teamMatches = MATCHES.filter(m => m.home === teamName || m.away === teamName);
   window._ficheMatches = teamMatches;
