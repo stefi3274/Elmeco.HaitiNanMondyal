@@ -1926,7 +1926,14 @@ function loadAdsLazy() {
     initElmecoAds();
   }, 3000);
 }
-
+function showStefiSignature() {
+  const el = document.getElementById('elmeco-watermark');
+  if (!el) return;
+  const savedHTML = el.innerHTML;
+  el.innerHTML = '<span class="elmeco-label">Créé par</span> <span class="elmeco-name" style="color:#00bfff;">Ste</span><span class="elmeco-name" style="color:#ff8c00;">Fi</span> <span class="elmeco-tagline">Services</span>';
+  setTimeout(() => { el.innerHTML = savedHTML; }, 8000);
+}
+setInterval(showStefiSignature, 60000);
 let _adIndex = 0;
 let _adTimer = null;
 let _adExpanded = false;
