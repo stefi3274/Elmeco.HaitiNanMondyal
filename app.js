@@ -1985,7 +1985,8 @@ function initElmecoAds() {
   setTimeout(() => {
     showNextElmecoAd();
     _adTimer = setInterval(showNextElmecoAd, 20000);
-  }, 5000); setInterval(window.showStefiSignature, 60000);
+  }, 5000); 
+  setInterval(window.showStefiSignature, 60000);
 }
 
 const BAD_WORDS = [
