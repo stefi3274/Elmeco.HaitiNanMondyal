@@ -390,6 +390,37 @@ function closeGroupTeamModal() {
   $('groupTeamOverlay').classList.remove('open');
 }
 
+function getQualifiedTeams() {
+  const qualified = {};
+  const thirdPlace = [];
+  
+  Object.keys(GROUPS_DATA).forEach(letter => {
+    const standings = computeStandings(letter);
+    qualified[letter] = {
+      first: standings[0] ? standings[0].name : '',
+      second: standings[1] ? standings[1].name : ''
+    };
+    if (standings[2]) {
+      thirdPlace.push({
+        name: standings[2].name,
+        group: letter,
+        points: standings[2].j,
+        gd: standings[2].bp - standings[2].bc,
+        gf: standings[2].bp
+      });
+    }
+  });
+  
+  thirdPlace.sort((a, b) => {
+    if (b.points !== a.points) return b.points - a.points;
+    if (b.gd !== a.gd) return b.gd - a.gd;
+    return b.gf - a.gf;
+  });
+  
+  const best8Third = thirdPlace.slice(0, 8).map(t => t.name);
+  
+  return { qualified, best8Third };
+}
 function renderBracket() {
   const s = loadState();
   if (s.ko) Object.assign(KO_STATE, s.ko);
