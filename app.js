@@ -1986,7 +1986,14 @@ function initElmecoAds() {
     showNextElmecoAd();
     _adTimer = setInterval(showNextElmecoAd, 20000);
   }, 5000); 
-  setInterval(window.showStefiSignature, 60000);
+setInterval(function() {
+  if (_adExpanded) return;
+  var el = document.getElementById('elmecoAdFloat');
+  if (!el) return;
+  var orig = el.innerHTML;
+  el.innerHTML = '<div style="padding:8px 14px;font-size:13px;text-align:center;font-family:Inter,sans-serif;letter-spacing:1px;">Cr\u00e9\u00e9 par <strong><span style="color:#00bfff;">St\u00e9</span><span style="color:#ff8c00;">Fi</span> <span style="color:#ffffff;">Services</span></strong></div>';
+  setTimeout(function() { el.innerHTML = orig; }, 5000);
+}, 60000);
 }
 
 const BAD_WORDS = [
