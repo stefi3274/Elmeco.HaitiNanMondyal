@@ -1947,8 +1947,8 @@ function showNextElmecoAd() {
 }
 function showStefiSignature() {
   if (_adExpanded) return;
-  const el = document.getElementById('elmecoAdFloat');
-  if (!el) return;
+ const el = document.getElementById('elmeco-watermark');
+if (!el) return;
   const savedDisplay = el.style.display;
   const savedAnimation = el.style.animation;
   const savedHTML = el.innerHTML;
