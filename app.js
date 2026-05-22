@@ -1944,7 +1944,8 @@ function showNextElmecoAd() {
     el.style.display = 'block';
     el.style.animation = 'ad-slide-in 0.5s ease forwards';
   }, 400);
-}function showStefiSignature() {
+}
+window.showStefiSignature = function() {
   if (_adExpanded) return;
   const el = document.getElementById('elmecoAdFloat');
   if (!el) return;
@@ -1984,8 +1985,7 @@ function initElmecoAds() {
   setTimeout(() => {
     showNextElmecoAd();
     _adTimer = setInterval(showNextElmecoAd, 20000);
-  setInterval(showStefiSignature, 60000);  
-  }, 5000);
+  }, 5000); setInterval(window.showStefiSignature, 60000);
 }
 
 const BAD_WORDS = [
