@@ -1945,7 +1945,7 @@ function showNextElmecoAd() {
     el.style.animation = 'ad-slide-in 0.5s ease forwards';
   }, 400);
 }
-window.showStefiSignature = function() {
+function showStefiSignature() {
   if (_adExpanded) return;
   const el = document.getElementById('elmecoAdFloat');
   if (!el) return;
@@ -1986,7 +1986,7 @@ function initElmecoAds() {
     showNextElmecoAd();
     _adTimer = setInterval(showNextElmecoAd, 20000);
   }, 5000); 
-setInterval(function() {
+setInterval(showStefiSignature, 60000);
   if (_adExpanded) return;
   var el = document.getElementById('elmecoAdFloat');
   if (!el) return;
