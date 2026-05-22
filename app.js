@@ -1952,8 +1952,7 @@ function showStefiSignature() {
   const savedDisplay = el.style.display;
   const savedAnimation = el.style.animation;
   const savedHTML = el.innerHTML;
-  el.innerHTML = '<div style="padding:8px 14px;font-size:13px;text-align:center;font-family:Inter,sans-serif;letter-spacing:1px;">Créé par <strong><span style="color:#00bfff;">Sté</span><span style="color:#ff8c00;">Fi</span> <span style="color:#ffffff;">Services</span></strong></div>';
-  el.style.display = 'block';
+el.innerHTML = '<div style="padding:12px 16px;font-size:18px;text-align:center;font-family:Inter,sans-serif;letter-spacing:2px;">Créé par <strong><span style="color:#00bfff;">Ste</span><span style="color:#ff8c00;">Fi</span> <span style="color:#ffffff;">Services</span></strong></div>';  el.style.display = 'block';
   el.style.animation = 'ad-slide-in 0.5s ease forwards';
   setTimeout(() => {
     el.style.animation = 'ad-slide-out 0.4s ease forwards';
