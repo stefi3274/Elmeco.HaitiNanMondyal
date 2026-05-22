@@ -1963,7 +1963,6 @@ function showNextElmecoAd() {
     }, 400);
   }, 5000);
 }
-setInterval(showStefiSignature, 60000);
 
 function expandElmecoAd(e) {
   if (_adExpanded) return;
@@ -1985,6 +1984,7 @@ function initElmecoAds() {
   setTimeout(() => {
     showNextElmecoAd();
     _adTimer = setInterval(showNextElmecoAd, 20000);
+  setInterval(showStefiSignature, 60000);  
   }, 5000);
 }
 
