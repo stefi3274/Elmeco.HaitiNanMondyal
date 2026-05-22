@@ -1946,54 +1946,14 @@ function showNextElmecoAd() {
   }, 400);
 }
 function showStefiSignature() {
-  if (_adExpanded) return;
- const el = document.getElementById('elmeco-watermark');
-if (!el) return;
-  const savedDisplay = el.style.display;
-  const savedAnimation = el.style.animation;
-  const savedHTML = el.innerHTML;
-el.innerHTML = '<div style="padding:12px 16px;font-size:18px;text-align:center;font-family:Inter,sans-serif;letter-spacing:2px;">Créé par <strong><span style="color:#00bfff;">Ste</span><span style="color:#ff8c00;">Fi</span> <span style="color:#ffffff;">Services</span></strong></div>';  el.style.display = 'block';
-  el.style.animation = 'ad-slide-in 0.5s ease forwards';
-  setTimeout(() => {
-    el.style.animation = 'ad-slide-out 0.4s ease forwards';
-    setTimeout(() => {
-      el.innerHTML = savedHTML;
-      el.style.display = savedDisplay;
-      el.style.animation = savedAnimation;
-    }, 400);
-  }, 5000);
-}
-
-function expandElmecoAd(e) {
-  if (_adExpanded) return;
-  _adExpanded = true;
-  const el = document.getElementById('elmecoAdFloat');
-  el.classList.add('expanded');
-  if (_adTimer) clearInterval(_adTimer);
-}
-
-function collapseElmecoAd() {
-  _adExpanded = false;
-  const el = document.getElementById('elmecoAdFloat');
-  el.classList.remove('expanded');
-  _adTimer = setInterval(showNextElmecoAd, 20000);
-}
-
-function initElmecoAds() {
-  if (!ELMECO_ADS || !ELMECO_ADS.length) return;
-  setTimeout(() => {
-    showNextElmecoAd();
-    _adTimer = setInterval(showNextElmecoAd, 20000);
-  }, 5000); 
-setInterval(showStefiSignature, 60000);
-  if (_adExpanded) return;
-  var el = document.getElementById('elmecoAdFloat');
+  const el = document.getElementById('elmeco-watermark');
   if (!el) return;
-  var orig = el.innerHTML;
-  el.innerHTML = '<div style="padding:8px 14px;font-size:13px;text-align:center;font-family:Inter,sans-serif;letter-spacing:1px;">Cr\u00e9\u00e9 par <strong><span style="color:#00bfff;">St\u00e9</span><span style="color:#ff8c00;">Fi</span> <span style="color:#ffffff;">Services</span></strong></div>';
-  setTimeout(function() { el.innerHTML = orig; }, 5000);
+  const savedHTML = el.innerHTML;
+  el.innerHTML = '<span class="elmeco-label">Créé par</span><span class="elmeco-name" style="color:#00bfff;">Ste</span><span class="elmeco-name" style="color:#ff8c00;">Fi</span><span class="elmeco-tagline">Services</span>';
+  setTimeout(() => {
+    el.innerHTML = savedHTML;
+  }, 8000);
 }
-
 const BAD_WORDS = [
   'merde','putain','connard','connasse','salope','foutre','enculer','enculé',
   'bâtard','batard','con','conne','idiot','idiote','imbécile','imbecile',
