@@ -152,7 +152,7 @@ function renderMatchCard(m, container) {
   }
 
   const opponent = isHaiti ? (m.home === 'Haïti' ? m.away : m.home) : null;
-  const waText = encodeURIComponent(`🏆 Coupe du Monde 2026\n${getFlag(m.home)} ${m.home} vs ${m.away} ${getFlag(m.away)}\n📅 ${m.date} · ${m.day}\n🏟️ ${m.stadium}, ${m.city}\n\nVia AYITI nan Mondyal`);
+  const waText = encodeURIComponent(`🏆 Bouyon Boul 2026\n${getFlag(m.home)} ${m.home} vs ${m.away} ${getFlag(m.away)}\n📅 ${m.date} · ${m.day}\n🏟️ ${m.stadium}, ${m.city}\n\nVia AYITI nan Mondyal`);
   const waLink = `https://wa.me/?text=${waText}`;
 
   div.innerHTML = `
