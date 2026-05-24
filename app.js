@@ -152,7 +152,7 @@ function renderMatchCard(m, container) {
   }
 
   const opponent = isHaiti ? (m.home === 'Haïti' ? m.away : m.home) : null;
-  const waText = encodeURIComponent(`🏆 FIFA Coupe du Monde 2026\n${getFlag(m.home)} ${m.home} vs ${m.away} ${getFlag(m.away)}\n📅 ${m.date} · ${m.day}\n🏟️ ${m.stadium}, ${m.city}\n\nVia AYITI nan Mondyal`);
+  const waText = encodeURIComponent(`🏆 Coupe du Monde 2026\n${getFlag(m.home)} ${m.home} vs ${m.away} ${getFlag(m.away)}\n📅 ${m.date} · ${m.day}\n🏟️ ${m.stadium}, ${m.city}\n\nVia AYITI nan Mondyal`);
   const waLink = `https://wa.me/?text=${waText}`;
 
   div.innerHTML = `
@@ -1137,20 +1137,20 @@ function showTeamFiche(teamName, group) {
     <div class="fiche-section-title">🏆 Titres</div>
     <div class="fiche-titles-list">${titreHTML}</div>
   `;
-  const starsHTML = data.stars ? data.stars.map(function(s){ return '<div class="fiche-title-badge">' + s.nom + ' <span style="opacity:0.7;font-size:12px">(' + s.club + ')</span></div>'; }).join('') : '<span class="no-titre">Non disponible</span>';
+  const starsHTML = data.stars ? data.stars.map(function(s){ return '<div class="fiche-title-badge badge-actuel">' + s.nom + ' <span style="opacity:0.7;font-size:12px">(' + s.club + ')</span></div>'; }).join('') : '<span class="no-titre">Non disponible</span>';
   $('ficheStars').innerHTML = '<div class="fiche-section-title">⭐ Stars actuelles</div><div class="fiche-titles-list">' + starsHTML + '</div>';
 
-  const buteursHTML = data.buteurs ? data.buteurs.map(function(s){ return '<div class="fiche-title-badge">' + s.nom + ' <span style="opacity:0.7;font-size:12px">(' + s.buts + ' buts)</span></div>'; }).join('') : '<span class="no-titre">Non disponible</span>';
+  const buteursHTML = data.buteurs ? data.buteurs.map(function(s){ return '<div class="fiche-title-badge badge-legende">' + s.nom + ' <span style="opacity:0.7;font-size:12px">(' + s.buts + ' buts)</span></div>'; }).join('') : '<span class="no-titre">Non disponible</span>';
   $('ficheButeurs').innerHTML = '<div class="fiche-section-title">⚽ Meilleurs buteurs</div><div class="fiche-titles-list">' + buteursHTML + '</div>';
 
-  const passeursHTML = data.passeurs ? data.passeurs.map(function(s){ return '<div class="fiche-title-badge">' + s.nom + ' <span style="opacity:0.7;font-size:12px">(' + s.passes + ' passes)</span></div>'; }).join('') : '<span class="no-titre">Non disponible</span>';
+  const passeursHTML = data.passeurs ? data.passeurs.map(function(s){ return '<div class="fiche-title-badge badge-legende">' + s.nom + ' <span style="opacity:0.7;font-size:12px">(' + s.passes + ' passes)</span></div>'; }).join('') : '<span class="no-titre">Non disponible</span>';
   $('fichePasseurs').innerHTML = '<div class="fiche-section-title">🎯 Meilleurs passeurs</div><div class="fiche-titles-list">' + passeursHTML + '</div>';
 
   if ($('ficheGardiens')) {
     var gardiensHTML;
     if (data.gardiens) {
-      var legBadges = (data.gardiens.legendes || []).map(function(n){ return '<div class="fiche-title-badge">' + n + ' <span style="opacity:0.7;font-size:12px">(légende)</span></div>'; }).join('');
-      var actBadges = (data.gardiens.actuels || []).map(function(n){ return '<div class="fiche-title-badge">' + n + ' <span style="opacity:0.7;font-size:12px">(actuel)</span></div>'; }).join('');
+      var legBadges = (data.gardiens.legendes || []).map(function(n){ return '<div class="fiche-title-badge badge-legende">' + n + ' <span style="opacity:0.7;font-size:12px">(légende)</span></div>'; }).join('');
+      var actBadges = (data.gardiens.actuels || []).map(function(n){ return '<div class="fiche-title-badge badge-actuel">' + n + ' <span style="opacity:0.7;font-size:12px">(actuel)</span></div>'; }).join('');
       gardiensHTML = legBadges + actBadges;
     } else {
       gardiensHTML = '<span class="no-titre">Non disponible</span>';
