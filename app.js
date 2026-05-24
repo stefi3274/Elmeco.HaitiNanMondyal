@@ -1146,6 +1146,18 @@ function showTeamFiche(teamName, group) {
   const passeursHTML = data.passeurs ? data.passeurs.map(function(s){ return '<div class="fiche-title-badge">' + s.nom + ' <span style="opacity:0.7;font-size:12px">(' + s.passes + ' passes)</span></div>'; }).join('') : '<span class="no-titre">Non disponible</span>';
   $('fichePasseurs').innerHTML = '<div class="fiche-section-title">🎯 Meilleurs passeurs</div><div class="fiche-titles-list">' + passeursHTML + '</div>';
 
+  if ($('ficheGardiens')) {
+    var gardiensHTML;
+    if (data.gardiens) {
+      var legBadges = (data.gardiens.legendes || []).map(function(n){ return '<div class="fiche-title-badge">' + n + ' <span style="opacity:0.7;font-size:12px">(légende)</span></div>'; }).join('');
+      var actBadges = (data.gardiens.actuels || []).map(function(n){ return '<div class="fiche-title-badge">' + n + ' <span style="opacity:0.7;font-size:12px">(actuel)</span></div>'; }).join('');
+      gardiensHTML = legBadges + actBadges;
+    } else {
+      gardiensHTML = '<span class="no-titre">Non disponible</span>';
+    }
+    $('ficheGardiens').innerHTML = '<div class="fiche-section-title">🧤 Gardiens</div><div class="fiche-titles-list">' + gardiensHTML + '</div>';
+  }
+
   const teamMatches = MATCHES.filter(m => m.home === teamName || m.away === teamName);
   window._ficheMatches = teamMatches;
   window._ficheTeam = teamName;
