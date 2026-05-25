@@ -216,6 +216,61 @@
     background: var(--accent3);
     color: #000;
   }
+
+  /* === Bande aux couleurs du pays (haut de la fiche équipe) === */
+  .fiche-country-band {
+    display: flex;
+    width: 100%;
+    height: 8px;
+    border-radius: 6px;
+    overflow: hidden;
+    margin-bottom: 14px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+  }
+  .fiche-country-band span {
+    flex: 1;
+    height: 100%;
+  }
+
+  /* === Étoiles dorées scintillantes autour du drapeau d'Haïti (dans les matchs) === */
+  .team-flag.flag-haiti {
+    position: relative;
+    display: inline-block;
+    overflow: visible;
+  }
+  .team-flag.flag-haiti::before,
+  .team-flag.flag-haiti::after {
+    content: "⭐ ✨ ⭐";
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 10px;
+    letter-spacing: 3px;
+    white-space: nowrap;
+    pointer-events: none;
+    filter: drop-shadow(0 0 3px rgba(232,185,35,0.9));
+  }
+  .team-flag.flag-haiti::before {
+    top: -12px;
+    animation: haiti-star-top 1.8s ease-in-out infinite;
+  }
+  .team-flag.flag-haiti::after {
+    bottom: -12px;
+    animation: haiti-star-bottom 1.8s ease-in-out infinite;
+    animation-delay: 0.9s;
+  }
+  @keyframes haiti-star-top {
+    0%, 100% { opacity: 0.15; transform: translateX(-50%) scale(0.85); }
+    50%      { opacity: 1;    transform: translateX(-50%) scale(1.1); }
+  }
+  @keyframes haiti-star-bottom {
+    0%, 100% { opacity: 0.15; transform: translateX(-50%) scale(0.85); }
+    50%      { opacity: 1;    transform: translateX(-50%) scale(1.1); }
+  }
+  /* Halo doré doux derrière le drapeau d'Haïti */
+  .match-card.match-haiti {
+    border: 1px solid rgba(232,185,35,0.45);
+  }
 </style>
 
 </head>

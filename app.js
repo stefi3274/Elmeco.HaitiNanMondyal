@@ -163,7 +163,7 @@ function renderMatchCard(m, container) {
     </div>
     <div class="match-teams">
       <div class="team" onclick="event.stopPropagation(); openTeamFromMatch('${m.home}')" style="cursor:pointer;" title="Infos ${m.home}">
-        <div class="team-flag">${getFlag(m.home)}</div>
+        <div class="team-flag${m.home === 'Haïti' ? ' flag-haiti' : ''}">${getFlag(m.home)}</div>
         <div class="team-name" style="text-decoration:underline dotted;text-underline-offset:3px;">${m.home}</div>
       </div>
       <div class="score-btn" onclick="event.stopPropagation(); toggleScoreEditor(${m.id}, this)" title="Ajouter le score">
@@ -174,7 +174,7 @@ function renderMatchCard(m, container) {
         <span class="score-btn-label">⚽</span>
       </div>
       <div class="team" onclick="event.stopPropagation(); openTeamFromMatch('${m.away}')" style="cursor:pointer;" title="Infos ${m.away}">
-        <div class="team-flag">${getFlag(m.away)}</div>
+        <div class="team-flag${m.away === 'Haïti' ? ' flag-haiti' : ''}">${getFlag(m.away)}</div>
         <div class="team-name" style="text-decoration:underline dotted;text-underline-offset:3px;">${m.away}</div>
       </div>
     </div>
@@ -1109,6 +1109,25 @@ function showTeamFiche(teamName, group) {
   $('ficheFlag').textContent = getFlag(teamName);
   $('ficheName').textContent = teamName;
   $('ficheGroup').textContent = `Groupe ${group}`;
+
+  // Bande aux couleurs du pays en haut de la fiche
+  const teamFicheEl = $('teamFiche');
+  if (teamFicheEl) {
+    const cols = (typeof TEAM_COLORS !== 'undefined' && TEAM_COLORS[teamName]) ? TEAM_COLORS[teamName] : null;
+    let bandEl = document.getElementById('ficheCountryBand');
+    if (!bandEl) {
+      bandEl = document.createElement('div');
+      bandEl.id = 'ficheCountryBand';
+      bandEl.className = 'fiche-country-band';
+      teamFicheEl.insertBefore(bandEl, teamFicheEl.firstChild);
+    }
+    if (cols) {
+      bandEl.innerHTML = cols.map(function(c){ return '<span style="background:' + c + '"></span>'; }).join('');
+      bandEl.style.display = 'flex';
+    } else {
+      bandEl.style.display = 'none';
+    }
+  }
 
   const titreCount = data.titres ? data.titres.length : 0;
   $('ficheStats').innerHTML = `
