@@ -269,10 +269,14 @@ function renderCalendar() {
     if (!byDate[m.date]) byDate[m.date] = [];
     byDate[m.date].push(m);
   });
+  const monthOrder = {'juin':6,'juil':7,'juil.':7};
   const sortedDates = Object.keys(byDate).sort((a, b) => {
-    const dayA = parseInt(a.split(' ')[0]);
-    const dayB = parseInt(b.split(' ')[0]);
-    return dayA - dayB;
+    const partsA = a.split(' ');
+    const partsB = b.split(' ');
+    const mA = monthOrder[partsA[1]] || 0;
+    const mB = monthOrder[partsB[1]] || 0;
+    if (mA !== mB) return mA - mB;
+    return parseInt(partsA[0]) - parseInt(partsB[0]);
   });
   sortedDates.forEach(date => {
     const ms = byDate[date];
