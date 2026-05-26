@@ -954,6 +954,9 @@ function saveScore() {
     try { window.fbSaveScore(currentModalId, SCORES[currentModalId]); } catch(e) {}
   }
 
+  // Propage les vainqueurs en phase finale (8es -> finale)
+  try { if (typeof propagateKnockout === 'function') propagateKnockout(); } catch(e) {}
+
   const m = MATCHES.find(x => x.id === currentModalId);
   const oldCard = document.querySelector(`.match-card[data-id="${currentModalId}"]`);
   if (oldCard) {
@@ -1413,9 +1416,10 @@ function renderRanking() {
                       diff < 0 ? `<span class="rank-diff-neg">${diff}</span>` :
                       `<span style="color:var(--text2)">0</span>`;
       const isHaiti = s.name === 'Haïti';
+      const posClass = i < 2 ? 'pos-qualif' : (i === 2 ? 'pos-attente' : 'pos-elim');
       return `
         <tr class="${i < 2 ? 'rank-qualified' : ''}">
-          <td>${i + 1}</td>
+          <td><span class="rank-pos-badge ${posClass}">${i + 1}</span></td>
           <td>
             <div class="rank-team-cell">
               <span style="font-size:18px;">${getFlag(s.name)}</span>
@@ -2161,6 +2165,9 @@ function saveInlineScore(matchId) {
     try { window.fbSaveScore(matchId, SCORES[matchId]); } catch(e) {}
   }
 
+  // Propage les vainqueurs en phase finale (8es -> finale)
+  try { if (typeof propagateKnockout === 'function') propagateKnockout(); } catch(e) {}
+
   const vsDisplay = document.getElementById('vs-display-' + matchId);
   if (vsDisplay) {
     vsDisplay.className = 'score-btn-current';
@@ -2552,6 +2559,57 @@ document.querySelectorAll('.filter-btn:not(:first-child)').forEach(btn => {
   if (group) btn.style.borderColor = GROUP_COLORS[group];
 });
 
+// ── Propagation automatique des vainqueurs en phase finale (8es -> finale) ──
+// Quand un match KO a un score, on remplace W{id} / L{id} dans les matchs suivants.
+function propagateKnockout() {
+  if (typeof MATCHES === 'undefined') return;
+  let changed = false;
+  // Pour chaque match de phase finale terminé, calculer vainqueur/perdant
+  const winners = {}; // numéro -> nom équipe
+  const losers = {};
+  MATCHES.forEach(m => {
+    if (!['F16','F8','QF','SF','TP','FIN'].includes(m.group)) return;
+    const s = SCORES[m.id];
+    if (!s || s.home === '' || s.home === null || s.home === undefined) return;
+    const h = parseInt(s.home), a = parseInt(s.away);
+    if (isNaN(h) || isNaN(a)) return;
+    // Ne pas propager si les équipes sont encore des placeholders
+    const homeIsPlaceholder = /^[WL]?\d/.test(m.home) || m.home.includes('/') || /^[12]/.test(m.home) || /^[GH][12]/.test(m.home);
+    const awayIsPlaceholder = /^[WL]?\d/.test(m.away) || m.away.includes('/') || /^[12]/.test(m.away) || /^[GH][12]/.test(m.away);
+    let winner = null, loser = null;
+    if (h > a) { winner = m.home; loser = m.away; }
+    else if (h < a) { winner = m.away; loser = m.home; }
+    else {
+      // Égalité : vainqueur déterminé par tirs au but (champ s.pen: 'home'|'away')
+      if (s.pen === 'home') { winner = m.home; loser = m.away; }
+      else if (s.pen === 'away') { winner = m.away; loser = m.home; }
+      else return; // pas de vainqueur défini, on ne propage pas
+    }
+    // N'enregistrer que si le vainqueur n'est pas lui-même un placeholder non résolu
+    if (winner && !winner.includes('/') && !/^[WL]\d/.test(winner)) {
+      winners[m.id] = winner;
+      losers[m.id] = loser;
+    }
+  });
+  // Remplacer les placeholders W{id} et L{id} dans les matchs suivants
+  MATCHES.forEach(m => {
+    if (!['F8','QF','SF','TP','FIN'].includes(m.group)) return;
+    ['home','away'].forEach(side => {
+      const val = m[side];
+      const wMatch = /^W(\d+)$/.exec(val);
+      const lMatch = /^L(\d+)$/.exec(val);
+      if (wMatch && winners[parseInt(wMatch[1])]) {
+        m[side] = winners[parseInt(wMatch[1])];
+        changed = true;
+      } else if (lMatch && losers[parseInt(lMatch[1])]) {
+        m[side] = losers[parseInt(lMatch[1])];
+        changed = true;
+      }
+    });
+  });
+  return changed;
+}
+
 // ── Application des scores reçus de Firebase (pour TOUS les visiteurs) ──
 window._applyFbScores = function(fbScores) {
   if (!fbScores) return;
@@ -2567,6 +2625,8 @@ window._applyFbScores = function(fbScores) {
       };
     }
   });
+  // Propager les vainqueurs en phase finale (8es -> finale)
+  try { propagateKnockout(); } catch(e) {}
   // Rafraîchit l'affichage des cartes visibles
   try {
     document.querySelectorAll('.match-card[data-id]').forEach(card => {

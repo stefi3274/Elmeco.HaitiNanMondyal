@@ -282,6 +282,20 @@
     background: #e74c3c !important;
     color: #fff !important;
   }
+  /* Badge de position sur la page Classement (renderRanking) */
+  .rank-pos-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+    font-weight: 800;
+    font-size: 13px;
+  }
+  .rank-pos-badge.pos-qualif { background: #1db954; color: #fff; }
+  .rank-pos-badge.pos-attente { background: #e8b923; color: #000; }
+  .rank-pos-badge.pos-elim { background: #e74c3c; color: #fff; }
 
   /* === Couleurs du score selon le résultat === */
   .score-num.res-win  { color: #1db954 !important; }
@@ -908,7 +922,7 @@
   <div id="view-ranking" style="display:none;">
     <div class="ranking-wrap">
       <div style="font-family:var(--font-ui);font-size:13px;color:var(--text2);margin-bottom:20px;">
-        Classement mis à jour en temps réel depuis les scores saisis. Les 2 premiers de chaque groupe se qualifient.
+        Classement mis à jour en temps réel depuis les scores saisis. Les 2 premiers de chaque groupe (vert) et les 8 meilleurs 3es (jaune) se qualifient.
       </div>
       <div id="rankingContent"></div>
     </div>
