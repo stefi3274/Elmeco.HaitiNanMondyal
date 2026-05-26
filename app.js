@@ -278,6 +278,7 @@ function renderCalendar() {
     const ms = byDate[date];
     const section = document.createElement('div');
     section.className = 'phase-section';
+    section.dataset.date = date;
     section.innerHTML = `<div class="phase-title">${date} 2026</div>`;
     const grid = document.createElement('div');
     grid.className = 'matches-grid';
@@ -286,6 +287,31 @@ function renderCalendar() {
     cont.appendChild(section);
   });
   applyFilters();
+  // Scroll vers la date courante pendant le Mondial,
+  // sinon vers le 11 juin (premier match)
+  setTimeout(() => {
+    const now = new Date();
+    const months = ['janv','févr','mars','avr','mai','juin','juil','août','sept','oct','nov','déc'];
+    const todayStr = now.getDate() + ' ' + months[now.getMonth()];
+    const wcStart = new Date('2026-06-11');
+    const wcEnd   = new Date('2026-07-20');
+    let targetDate = '11 juin'; // par défaut : premier match
+    if (now >= wcStart && now <= wcEnd) targetDate = todayStr; // pendant le Mondial
+    const sections = document.querySelectorAll('#matchesContainer .phase-section');
+    let target = null;
+    sections.forEach(s => {
+      if (s.dataset.date && s.dataset.date.toLowerCase().includes(targetDate.toLowerCase())) {
+        target = s;
+      }
+    });
+    // Fallback : première section visible
+    if (!target) target = sections[0];
+    if (target) {
+      setTimeout(() => {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 200);
+    }
+  }, 300);
 }
 
 function computeStandings(letter) {
