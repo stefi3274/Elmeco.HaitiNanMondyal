@@ -1,50 +1,51 @@
-const CACHE_NAME = 'ayiti-mondyal-v4';
-const CACHE_ASSETS = [
+// ── Service Worker AYITI nan Mondyal 2026 ──
+// Incrémente CACHE_VERSION à chaque déploiement pour invalider le cache
+const CACHE_VERSION = 'v20260526-003';
+const CACHE_NAME = `ayiti-mondyal-${CACHE_VERSION}`;
+
+const ASSETS = [
   './',
   './index.html',
-  './style.css',
   './app.js',
-  './manifest.json'
+  './data.js',
+  './style.css',
+  './favicon.png',
+  './favicon-192.png',
+  './og-image.jpg',
 ];
 
-self.addEventListener('install', e => {
-  e.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(CACHE_ASSETS))
-      .then(() => self.skipWaiting())
+// Installation : mise en cache des assets
+self.addEventListener('install', event => {
+  self.skipWaiting(); // ← force l'activation immédiate (pas d'attente)
+  event.waitUntil(
+    caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS)).catch(() => {})
   );
 });
 
-self.addEventListener('activate', e => {
-  e.waitUntil(
+// Activation : supprime les anciens caches
+self.addEventListener('activate', event => {
+  event.waitUntil(
     caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
-    ).then(() => self.clients.claim())
+      Promise.all(
+        keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))
+      )
+    ).then(() => self.clients.claim()) // ← prend le contrôle immédiatement
   );
 });
 
-self.addEventListener('fetch', e => {
-  const url = new URL(e.request.url);
-  if (url.hostname.includes('rapidapi') ||
-      url.hostname.includes('firebase') ||
-      url.hostname.includes('googleapis') ||
-      url.hostname.includes('onesignal')) {
-    return;
-  }
-  e.respondWith(
-    caches.match(e.request).then(cached => {
-      if (cached) return cached;
-      return fetch(e.request).then(response => {
-        if (response.ok && url.hostname === self.location.hostname) {
+// Fetch : réseau d'abord, cache en fallback (network-first)
+// → toujours la version la plus récente si en ligne
+self.addEventListener('fetch', event => {
+  event.respondWith(
+    fetch(event.request)
+      .then(response => {
+        // Met à jour le cache avec la version fraîche
+        if (response && response.status === 200) {
           const clone = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(e.request, clone));
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
         }
         return response;
-      }).catch(() => cached || new Response('Hors ligne', { status: 503 }));
-    })
+      })
+      .catch(() => caches.match(event.request)) // fallback cache si hors ligne
   );
-});
-
-self.addEventListener('message', e => {
-  if (e.data === 'skipWaiting') self.skipWaiting();
 });
