@@ -711,6 +711,7 @@ function checkAdminPwd() {
     adminAuthenticated = true;
     window.adminAuthenticated = true;
     document.body.classList.add('is-admin');
+    document.body.classList.add('admin-mode');
     const ov = $('adminLoginOverlay');
     if (ov) ov.remove();
     showAdminPanel();
@@ -2011,6 +2012,25 @@ function showNextElmecoAd() {
     el.style.animation = 'ad-slide-in 0.5s ease forwards';
   }, 400);
 }
+
+// Agrandir la pub au clic (l'utilisateur clique sur la pub flottante)
+function expandElmecoAd(event) {
+  if (event) event.stopPropagation();
+  const el = document.getElementById('elmecoAdFloat');
+  if (!el) return;
+  _adExpanded = true;
+  el.classList.add('expanded');
+  // La rotation auto est suspendue tant que _adExpanded est true
+}
+
+// Refermer la pub (clic sur la croix)
+function collapseElmecoAd() {
+  const el = document.getElementById('elmecoAdFloat');
+  if (!el) return;
+  _adExpanded = false;
+  el.classList.remove('expanded');
+}
+
 function showStefiSignature() {
   const el = document.getElementById('elmeco-watermark');
   if (!el) return;
