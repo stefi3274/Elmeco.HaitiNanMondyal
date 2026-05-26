@@ -99,6 +99,27 @@
     });
   }
 
+  // ── Sync scores depuis Firebase (lecture pour TOUS les visiteurs) ──
+  function syncScores() {
+    onValue(ref(db, 'scores'), snap => {
+      const data = snap.val() || {};
+      // Stocke globalement et déclenche le rafraîchissement de l'app
+      window._fbScores = data;
+      if (typeof window._applyFbScores === 'function') {
+        window._applyFbScores(data);
+      }
+    });
+  }
+
+  // ── Écriture d'un score vers Firebase (réservé admin) ──
+  window.fbSaveScore = function(matchId, scoreObj) {
+    // scoreObj = {home, away, scorers, mvp} ou null pour effacer
+    if (scoreObj === null || scoreObj === undefined) {
+      return remove(ref(db, 'scores/' + matchId));
+    }
+    return set(ref(db, 'scores/' + matchId), scoreObj);
+  };
+
   // ── Sync commentaires depuis Firebase ──
   function syncComments() {
     onValue(ref(db, 'comments'), snap => {
@@ -200,6 +221,7 @@
   window.addEventListener('load', () => {
     syncReactions();
    // syncComments();
+    syncScores();
     syncPronos();
     syncUsers();
   });
@@ -231,6 +253,42 @@
     flex: 1;
     height: 100%;
   }
+
+  /* === Mode admin : édition des scores réservée à l'admin === */
+  /* Le bouton score n'est cliquable (curseur, hover) que pour l'admin.
+     Le score affiché (résultat) reste visible par TOUS les visiteurs. */
+  .score-btn { cursor: default; }
+  body.is-admin .score-btn { cursor: pointer; }
+  /* L'éditeur de score ne peut s'ouvrir que pour l'admin */
+  body:not(.is-admin) .score-inline-editor { display: none !important; }
+  /* Petit badge visuel quand on est en mode admin */
+  body.is-admin .score-btn::after {
+    content: "✎";
+    font-size: 9px;
+    color: var(--accent, #e8b923);
+    margin-left: 2px;
+  }
+
+  /* === Couleurs du classement selon la position === */
+  .standings-rank.pos-qualif {
+    background: #1db954 !important;
+    color: #fff !important;
+  }
+  .standings-rank.pos-attente {
+    background: #e8b923 !important;
+    color: #000 !important;
+  }
+  .standings-rank.pos-elim {
+    background: #e74c3c !important;
+    color: #fff !important;
+  }
+
+  /* === Couleurs du score selon le résultat === */
+  .score-num.res-win  { color: #1db954 !important; }
+  .score-num.res-loss { color: #e74c3c !important; }
+  /* Nul : blanc par défaut (thème sombre), noir en thème clair */
+  .score-num.res-nul  { color: #fff !important; }
+  body.theme-light .score-num.res-nul { color: #000 !important; }
 
   /* === Étoiles dorées scintillantes autour du drapeau d'Haïti (dans les matchs) === */
   .team-flag.flag-haiti {

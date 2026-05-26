@@ -140,11 +140,18 @@ function renderMatchCard(m, container) {
     const scorersText = score.scorers && score.scorers.length
       ? score.scorers.map(s => `${s.name}${s.minute ? ' ' + s.minute + "'" : ''}`).join(' · ')
       : '';
+    // Couleur selon le résultat pour chaque équipe
+    const hh = parseInt(score.home), aa = parseInt(score.away);
+    let homeRes = 'res-nul', awayRes = 'res-nul';
+    if (!isNaN(hh) && !isNaN(aa)) {
+      if (hh > aa) { homeRes = 'res-win'; awayRes = 'res-loss'; }
+      else if (hh < aa) { homeRes = 'res-loss'; awayRes = 'res-win'; }
+    }
     scoreHTML = `
       <div class="score-badge">
-        <span class="score-num">${score.home}</span>
+        <span class="score-num ${homeRes}">${score.home}</span>
         <span class="score-sep">–</span>
-        <span class="score-num">${score.away}</span>
+        <span class="score-num ${awayRes}">${score.away}</span>
       </div>
       ${scorersText ? `<div class="score-scorers">${scorersText}</div>` : ''}
       <div class="edit-hint">✏ modifier</div>
@@ -166,7 +173,7 @@ function renderMatchCard(m, container) {
         <div class="team-flag${m.home === 'Haïti' ? ' flag-haiti' : ''}">${getFlag(m.home)}</div>
         <div class="team-name" style="text-decoration:underline dotted;text-underline-offset:3px;">${m.home}</div>
       </div>
-      <div class="score-btn" onclick="event.stopPropagation(); toggleScoreEditor(${m.id}, this)" title="Ajouter le score">
+      <div class="score-btn" onclick="event.stopPropagation(); if(window.adminAuthenticated){ toggleScoreEditor(${m.id}, this); } else if(typeof openAdmin==='function' && false){ } " title="${'Score'}">
         <span class="score-btn-label">Score</span>
         <span class="${score && score.home !== null && score.home !== undefined && score.home !== '' ? 'score-btn-current' : 'score-btn-vs'}" id="vs-display-${m.id}">
           ${score && score.home !== null && score.home !== undefined && score.home !== '' ? score.home + '–' + score.away : 'VS'}
@@ -329,9 +336,11 @@ function renderGroups() {
         <div class="standings-header">
           <span>#</span><span>Équipe</span><span>J</span><span>G</span><span>N</span><span>P</span><span>Pts</span>
         </div>
-        ${standings.map((s,i) => `
+        ${standings.map((s,i) => {
+          const posClass = i < 2 ? 'pos-qualif' : (i === 2 ? 'pos-attente' : 'pos-elim');
+          return `
           <div class="standings-row">
-            <span class="standings-rank ${i<2?'top2':''}">${i+1}</span>
+            <span class="standings-rank ${i<2?'top2':''} ${posClass}">${i+1}</span>
             <span class="standings-team"><span>${getFlag(s.name)}</span><span>${s.name}</span></span>
             <span class="standings-num">${s.j}</span>
             <span class="standings-num">${s.g}</span>
@@ -339,7 +348,7 @@ function renderGroups() {
             <span class="standings-num">${s.p}</span>
             <span class="standings-pts">${s.pts}</span>
           </div>
-        `).join('')}
+        `;}).join('')}
       </div>` : ''}
     `;
     grid.appendChild(div);
@@ -700,9 +709,13 @@ function checkAdminPwd() {
   const val = $('adminPwdInput') ? $('adminPwdInput').value : '';
   if (val === ADMIN_PWD) {
     adminAuthenticated = true;
+    window.adminAuthenticated = true;
+    document.body.classList.add('is-admin');
     const ov = $('adminLoginOverlay');
     if (ov) ov.remove();
     showAdminPanel();
+    // Re-render pour faire apparaître les éditeurs de score
+    if (typeof applyFilters === 'function') applyFilters();
   } else {
     const err = $('adminLoginError');
     if (err) err.textContent = '❌ Mot de passe incorrect';
@@ -936,6 +949,11 @@ function saveScore() {
   }
   saveState({ scores: SCORES });
 
+  // Publie le score sur Firebase pour TOUS les visiteurs
+  if (window.fbSaveScore && SCORES[currentModalId]) {
+    try { window.fbSaveScore(currentModalId, SCORES[currentModalId]); } catch(e) {}
+  }
+
   const m = MATCHES.find(x => x.id === currentModalId);
   const oldCard = document.querySelector(`.match-card[data-id="${currentModalId}"]`);
   if (oldCard) {
@@ -958,6 +976,12 @@ function clearScore() {
   if (currentModalId === null) return;
   delete SCORES[currentModalId];
   saveState({ scores: SCORES });
+
+  // Efface aussi le score sur Firebase pour TOUS les visiteurs
+  if (window.fbSaveScore) {
+    try { window.fbSaveScore(currentModalId, null); } catch(e) {}
+  }
+
   $('mScoreHome').value = '';
   $('mScoreAway').value = '';
   $('scorersList').innerHTML = '';
@@ -2132,6 +2156,11 @@ function saveInlineScore(matchId) {
   SCORES[matchId] = { home: homeScore, away: awayScore, scorers: [] };
   saveState({ scores: SCORES });
 
+  // Publie le score sur Firebase pour TOUS les visiteurs
+  if (window.fbSaveScore) {
+    try { window.fbSaveScore(matchId, SCORES[matchId]); } catch(e) {}
+  }
+
   const vsDisplay = document.getElementById('vs-display-' + matchId);
   if (vsDisplay) {
     vsDisplay.className = 'score-btn-current';
@@ -2522,3 +2551,34 @@ document.querySelectorAll('.filter-btn:not(:first-child)').forEach(btn => {
   const group = btn.getAttribute('onclick').match(/'([A-L])'/)?.[1];
   if (group) btn.style.borderColor = GROUP_COLORS[group];
 });
+
+// ── Application des scores reçus de Firebase (pour TOUS les visiteurs) ──
+window._applyFbScores = function(fbScores) {
+  if (!fbScores) return;
+  // Fusionne les scores Firebase dans SCORES local
+  Object.entries(fbScores).forEach(([matchId, scoreObj]) => {
+    const id = parseInt(matchId);
+    if (scoreObj && scoreObj.home !== undefined && scoreObj.away !== undefined) {
+      SCORES[id] = {
+        home: scoreObj.home,
+        away: scoreObj.away,
+        scorers: scoreObj.scorers || [],
+        mvp: scoreObj.mvp || null
+      };
+    }
+  });
+  // Rafraîchit l'affichage des cartes visibles
+  try {
+    document.querySelectorAll('.match-card[data-id]').forEach(card => {
+      const id = parseInt(card.getAttribute('data-id'));
+      const m = (typeof MATCHES !== 'undefined') ? MATCHES.find(x => x.id === id) : null;
+      if (m) {
+        const tmp = document.createElement('div');
+        renderMatchCard(m, tmp);
+        if (tmp.firstChild) card.replaceWith(tmp.firstChild);
+      }
+    });
+  } catch(e) {}
+  // Rafraîchit les matchs d'Haïti et favoris si visibles
+  try { if (typeof renderHaitiMatches === 'function') renderHaitiMatches(); } catch(e) {}
+};
