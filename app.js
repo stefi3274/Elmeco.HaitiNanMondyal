@@ -2692,3 +2692,22 @@ window._applyFbScores = function(fbScores) {
   // Rafraîchit les matchs d'Haïti et favoris si visibles
   try { if (typeof renderHaitiMatches === 'function') renderHaitiMatches(); } catch(e) {}
 };
+
+// ── Accès admin secret : triple clic sur le ballon ⚽ ──────────────────
+(function() {
+  let _clicks = 0, _timer = null;
+  document.addEventListener('DOMContentLoaded', function() {
+    const trigger = document.getElementById('secretAdminTrigger');
+    if (!trigger) return;
+    trigger.addEventListener('click', function() {
+      _clicks++;
+      clearTimeout(_timer);
+      _timer = setTimeout(function() { _clicks = 0; }, 600);
+      if (_clicks >= 3) {
+        _clicks = 0;
+        clearTimeout(_timer);
+        if (typeof openAdmin === 'function') openAdmin();
+      }
+    });
+  });
+})();

@@ -436,7 +436,7 @@
 
     <!-- CENTRE : Logo -->
     <div class="logo" style="flex:1;justify-content:center;text-align:center;">
-      <div class="logo-icon">⚽</div>
+      <div class="logo-icon" id="secretAdminTrigger">⚽</div>
       <div>
         <div class="logo-text">AYITI nan Mondyal</div>
         <div class="logo-sub">11 Juin — 19 Juillet · USA · Canada · Mexique</div>
@@ -506,7 +506,7 @@
   <!-- Actions -->
   <div style="display:flex;flex-direction:column;gap:8px;">
     <button id="btnInstall" onclick="installApp();closeSettingsPanel();" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px;font-family:var(--font-ui);font-size:12px;cursor:pointer;width:100%;">⬇️ Installer l'application</button>
-    <button onclick="closeSettingsPanel();openAdmin();" style="background:none;border:1px solid rgba(231,76,60,0.4);border-radius:8px;color:#e74c3c;padding:10px;font-family:var(--font-ui);font-size:12px;cursor:pointer;width:100%;">🔐 Modération Admin</button>
+    <button onclick="closeSettingsPanel();openAdmin();" style="display:none;background:none;border:1px solid rgba(231,76,60,0.4);border-radius:8px;color:#e74c3c;padding:10px;font-family:var(--font-ui);font-size:12px;cursor:pointer;width:100%;">🔐 Modération Admin</button>
   </div>
 </div>
 <div id="settingsOverlay" onclick="closeSettingsPanel()" style="display:none;position:fixed;inset:0;z-index:9994;background:rgba(0,0,0,0.4);"></div>
@@ -546,7 +546,7 @@
     <div class="sidebar-nav-item sidebar-extra" onclick="closeSidebar(); openProfileEditor();">
       <span class="sidebar-nav-icon">👤</span> Mon profil & Points
     </div>
-    <div class="sidebar-nav-item sidebar-extra" onclick="closeSidebar(); openAdmin();" style="color:#e74c3c; border-left-color:#e74c3c;">
+    <div class="sidebar-nav-item sidebar-extra" onclick="closeSidebar(); openAdmin();" style="display:none;color:#e74c3c; border-left-color:#e74c3c;">
       <span class="sidebar-nav-icon">🔐</span> Modération Admin
     </div>
   </div>
