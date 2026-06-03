@@ -1350,13 +1350,15 @@ function renderHaitiMatches() {
   if (!el) return;
   el.innerHTML = haitiMatches.map(m => {
     const score = SCORES[m.id];
-    const scoreStr = score && score.home !== undefined ? `<strong style="color:var(--accent)">${score.home}–${score.away}</strong>` : '<span style="color:var(--text2)">—</span>';
+    const scoreStr = score && score.home !== undefined
+      ? `<strong style="color:var(--accent);font-size:16px">${score.home}–${score.away}</strong>`
+      : '<span style="color:var(--text2)">—</span>';
     const opponent = m.home === 'Haïti' ? m.away : m.home;
     return `
       <div class="haiti-match-row">
         <div>
-          <div class="haiti-match-team">${getFlag('Haïti')} Haïti vs ${getFlag(opponent)} ${opponent}</div>
-          <div class="haiti-match-date">${m.date} · ${m.city}</div>
+          <div class="haiti-match-team" style="font-size:15px;font-weight:700;">${getFlag('Haïti')} Haïti vs ${getFlag(opponent)} ${opponent}</div>
+          <div class="haiti-match-date" style="font-size:13px;margin-top:3px;">${m.date} · 🕐 ${m.time} · ${m.city}</div>
         </div>
         <div>${scoreStr}</div>
       </div>`;
@@ -1566,7 +1568,42 @@ function hideSplash() {
     document.body.style.overflow = '';
   }, 600);
 }
-document.addEventListener('DOMContentLoaded', () => setTimeout(hideSplash, 5000));
+
+// Personnaliser le splash selon le profil (à partir de la 2e visite)
+function personalizeSplash() {
+  const visitCount = parseInt(localStorage.getItem('_visitCount') || '1');
+  if (visitCount < 2) {
+    // 1ère visite : incrémenter pour la prochaine
+    localStorage.setItem('_visitCount', '2');
+    return; // splash normal Haïti
+  }
+  // 2e visite et plus : personnaliser si profil existant
+  const raw = localStorage.getItem('_userProfile');
+  if (!raw) return;
+  try {
+    const user = JSON.parse(raw);
+    const team = user.team || '';
+    const name = user.name || '';
+    const flagEl = document.getElementById('splashFlag');
+    const titleEl = document.getElementById('splashTitle');
+    if (!flagEl) return;
+    if (team) {
+      // Extraire le drapeau (1er caractère emoji de l'équipe)
+      const parts = team.split(' ');
+      const flag = parts[0] || '🇭🇹';
+      flagEl.textContent = flag;
+      // Message de bienvenue personnalisé
+      if (titleEl && name && name !== 'Visiteur' && name !== 'Anonyme') {
+        titleEl.innerHTML = 'Bienvenue, <span style="color:var(--accent)">' + name + '</span> !';
+      }
+    }
+  } catch(e) {}
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  personalizeSplash();
+  setTimeout(hideSplash, 5000);
+});
 window.addEventListener('load', () => setTimeout(hideSplash, 5000));
 setTimeout(hideSplash, 6000); // fallback absolu
 
@@ -1922,23 +1959,28 @@ function selectAvatar(btn) {
 function joinCommunity() {
   const n = document.getElementById('identityName');
   const a = document.querySelector('.avatar-btn.selected');
+  const t = document.getElementById('identityTeam');
   const existingPoints = _user ? (_user.points || 0) : 0;
   const existingJoined = _user ? _user.joined : Date.now();
   _user = {
     name: (n && n.value.trim()) || 'Anonyme',
     avatar: a ? a.textContent : '⚽',
+    team: (t && t.value) || '',
     points: existingPoints,
     joined: existingJoined
   };
   saveUser();
+  // Marquer que c'est la 2e visite ou plus
+  localStorage.setItem('_visitCount', '2');
   document.getElementById('identityOverlay').style.display = 'none';
   updateUserBadge();
   addPoints(5, 'Bienvenue !');
 }
 
 function skipIdentity() {
-  _user = { name: 'Visiteur', avatar: '⚽', points: 0, joined: Date.now() };
+  _user = { name: 'Visiteur', avatar: '⚽', team: '', points: 0, joined: Date.now() };
   saveUser();
+  localStorage.setItem('_visitCount', '2');
   document.getElementById('identityOverlay').style.display = 'none';
   updateUserBadge();
 }

@@ -298,6 +298,24 @@
     .rank-pos-badge { width: 22px; height: 22px; font-size: 11px; }
   }
 
+  /* === Sélecteur équipe dans le formulaire d'inscription === */
+  .identity-team-select {
+    width: 100%;
+    padding: 10px 14px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--card-bg, #131a2e);
+    color: var(--text);
+    font-family: var(--font-ui);
+    font-size: 15px;
+    margin-bottom: 8px;
+    cursor: pointer;
+  }
+  body.theme-light .identity-team-select {
+    background: #f0f4ff;
+    color: #1a1a2e;
+  }
+
   /* === Couleurs du classement selon la position === */
   .standings-rank.pos-qualif {
     background: #1db954 !important;
@@ -385,6 +403,30 @@
     <input class="identity-name-input" id="identityName" type="text" placeholder="Ton prénom ou pseudo..." maxlength="20">
     <div class="identity-avatar-label">Choisis ton avatar</div>
     <div class="avatar-grid" id="avatarGrid"><button class="avatar-btn" onclick="selectAvatar(this)">⚽</button><button class="avatar-btn" onclick="selectAvatar(this)">🦁</button><button class="avatar-btn" onclick="selectAvatar(this)">🐯</button><button class="avatar-btn" onclick="selectAvatar(this)">🦅</button><button class="avatar-btn" onclick="selectAvatar(this)">🏆</button><button class="avatar-btn" onclick="selectAvatar(this)">🔥</button><button class="avatar-btn" onclick="selectAvatar(this)">💪</button><button class="avatar-btn" onclick="selectAvatar(this)">🌟</button><button class="avatar-btn" onclick="selectAvatar(this)">👑</button><button class="avatar-btn" onclick="selectAvatar(this)">🎯</button><button class="avatar-btn" onclick="selectAvatar(this)">🇭</button><button class="avatar-btn" onclick="selectAvatar(this)">🇹</button><button class="avatar-btn" onclick="selectAvatar(this)">⚡</button></div>
+    <div class="identity-avatar-label" style="margin-top:14px;">⚽ Quelle équipe tu supportes ?</div>
+    <select class="identity-team-select" id="identityTeam">
+      <option value="">-- Choisis ton équipe --</option>
+      <option value="🇭🇹 Haïti">🇭🇹 Haïti</option>
+      <option value="🇧🇷 Brésil">🇧🇷 Brésil</option>
+      <option value="🇫🇷 France">🇫🇷 France</option>
+      <option value="🇦🇷 Argentine">🇦🇷 Argentine</option>
+      <option value="🇵🇹 Portugal">🇵🇹 Portugal</option>
+      <option value="🏴󠁧󠁢󠁥󠁮󠁧󠁿 Angleterre">🏴󠁧󠁢󠁥󠁮󠁧󠁿 Angleterre</option>
+      <option value="🇪🇸 Espagne">🇪🇸 Espagne</option>
+      <option value="🇩🇪 Allemagne">🇩🇪 Allemagne</option>
+      <option value="🇲🇦 Maroc">🇲🇦 Maroc</option>
+      <option value="🇺🇸 États-Unis">🇺🇸 États-Unis</option>
+      <option value="🇲🇽 Mexique">🇲🇽 Mexique</option>
+      <option value="🇨🇦 Canada">🇨🇦 Canada</option>
+      <option value="🇸🇳 Sénégal">🇸🇳 Sénégal</option>
+      <option value="🇨🇴 Colombie">🇨🇴 Colombie</option>
+      <option value="🇯🇵 Japon">🇯🇵 Japon</option>
+      <option value="🇳🇱 Pays-Bas">🇳🇱 Pays-Bas</option>
+      <option value="🇺🇾 Uruguay">🇺🇾 Uruguay</option>
+      <option value="🇨🇮 Côte d'Ivoire">🇨🇮 Côte d'Ivoire</option>
+      <option value="🇩🇿 Algérie">🇩🇿 Algérie</option>
+      <option value="🇳🇬 Nigeria">🇳🇬 Nigeria</option>
+    </select>
     <button class="identity-join-btn" onclick="joinCommunity()">⚡ Rejoindre !</button>
     <span class="identity-skip" onclick="skipIdentity()">Continuer sans profil</span>
   </div>
@@ -394,8 +436,8 @@
 <div id="splashScreen">
   <div class="splash-year">2026</div>
   <img class="splash-logo" src="img_extracted_00.jpg" alt="ELMECO">
-  <div class="splash-flag">🇭🇹</div>
-  <div class="splash-title">AYITI <span>nan</span> Mondyal</div>
+  <div class="splash-flag" id="splashFlag">🇭🇹</div>
+  <div class="splash-title" id="splashTitle">AYITI <span>nan</span> Mondyal</div>
   <div class="splash-subtitle">Bouyon Boul 2026</div>
   <div class="splash-bar-wrap"><div class="splash-bar"></div></div>
   <div class="splash-loading">Chargement…</div>
