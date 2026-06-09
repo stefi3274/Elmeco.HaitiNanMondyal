@@ -1,24 +1,24 @@
 {
   "name": "AYITI nan Mondyal 2026",
-  "short_name": "AYITI Mondyal 2026",
-  "description": "Calendrier interactif FIFA World Cup 2026 — Une courtoisie de ELMECO",
-  "start_url": "/Elmeco.HaitiNanMondyal/",
-  "scope": "/Elmeco.HaitiNanMondyal/",
+  "short_name": "Bouyon Boul",
+  "description": "Calendrier interactif de la Coupe du Monde 2026 — Une courtoisie de ELMECO",
+  "start_url": "./index.html",
   "display": "standalone",
+  "background_color": "#0a0e1a",
+  "theme_color": "#e8b923",
   "orientation": "portrait",
-  "background_color": "#030508",
-  "theme_color": "#030508",
   "lang": "fr",
   "icons": [
     {
-      "src": "img_extracted_01.jpg",
-      "sizes": "192x192",
-      "type": "image/jpeg"
+      "src": "favicon.png",
+      "sizes": "32x32",
+      "type": "image/png"
     },
     {
-      "src": "img_extracted_01.jpg",
-      "sizes": "512x512",
-      "type": "image/jpeg"
+      "src": "favicon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }
