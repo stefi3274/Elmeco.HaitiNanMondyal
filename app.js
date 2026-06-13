@@ -293,31 +293,40 @@ function renderCalendar() {
   applyFilters();
 
   // Scroll vers le match du jour ou le prochain à venir
-  setTimeout(() => {
+  function scrollToToday() {
     const now = new Date();
-    const months = {'janvier':1,'février':2,'mars':3,'avril':4,'mai':5,'juin':6,'juillet':7,'août':8,'septembre':9,'octobre':10,'novembre':11,'décembre':12,'janv':1,'févr':2,'mars':3,'avr':4,'mai':5,'juin':6,'juil':7,'août':8};
+    const months = {
+      'juin':6,'juil':7,'juil.':7,
+      'janvier':1,'février':2,'mars':3,'avril':4,'mai':5,
+      'juillet':7,'août':8,'septembre':9,'octobre':10,'novembre':11,'décembre':12
+    };
     const sections = Array.from(document.querySelectorAll('#matchesContainer .phase-section'));
+    if (!sections.length) return;
 
-    // Convertir une date "11 juin" en objet Date 2026
-    function parseMatchDate(str) {
+    const todayMs = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+
+    function parseSectionDate(str) {
+      if (!str) return null;
       const parts = str.trim().split(' ');
       const day = parseInt(parts[0]);
-      const month = months[parts[1]] || 6;
-      return new Date(2026, month - 1, day);
+      const month = months[parts[1]];
+      if (!month || isNaN(day)) return null;
+      return new Date(2026, month - 1, day).getTime();
     }
 
-    // Trouver la section du jour ou la prochaine
+    // Chercher la section du jour, ou la prochaine
     let target = null;
     for (const sec of sections) {
-      const d = parseMatchDate(sec.dataset.date || '');
-      const secDay = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-      const today  = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      if (secDay >= today) { target = sec; break; }
+      const ms = parseSectionDate(sec.dataset.date);
+      if (ms !== null && ms >= todayMs) { target = sec; break; }
     }
     // Fallback : première section
-    if (!target) target = sections[0];
-    if (target) setTimeout(() => target.scrollIntoView({ behavior: 'smooth', block: 'start' }), 200);
-  }, 300);
+    if (!target) target = sections[sections.length - 1];
+    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  // Double délai pour s'assurer que le DOM et applyFilters sont prêts
+  setTimeout(() => requestAnimationFrame(scrollToToday), 400);
 }
 
 function computeStandings(letter) {
