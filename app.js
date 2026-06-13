@@ -291,30 +291,32 @@ function renderCalendar() {
     cont.appendChild(section);
   });
   applyFilters();
-  // Scroll vers la date courante pendant le Mondial,
-  // sinon vers le 11 juin (premier match)
+
+  // Scroll vers le match du jour ou le prochain à venir
   setTimeout(() => {
     const now = new Date();
-    const months = ['janv','févr','mars','avr','mai','juin','juil','août','sept','oct','nov','déc'];
-    const todayStr = now.getDate() + ' ' + months[now.getMonth()];
-    const wcStart = new Date('2026-06-11');
-    const wcEnd   = new Date('2026-07-20');
-    let targetDate = '11 juin'; // par défaut : premier match
-    if (now >= wcStart && now <= wcEnd) targetDate = todayStr; // pendant le Mondial
-    const sections = document.querySelectorAll('#matchesContainer .phase-section');
-    let target = null;
-    sections.forEach(s => {
-      if (s.dataset.date && s.dataset.date.toLowerCase().includes(targetDate.toLowerCase())) {
-        target = s;
-      }
-    });
-    // Fallback : première section visible
-    if (!target) target = sections[0];
-    if (target) {
-      setTimeout(() => {
-        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 200);
+    const months = {'janvier':1,'février':2,'mars':3,'avril':4,'mai':5,'juin':6,'juillet':7,'août':8,'septembre':9,'octobre':10,'novembre':11,'décembre':12,'janv':1,'févr':2,'mars':3,'avr':4,'mai':5,'juin':6,'juil':7,'août':8};
+    const sections = Array.from(document.querySelectorAll('#matchesContainer .phase-section'));
+
+    // Convertir une date "11 juin" en objet Date 2026
+    function parseMatchDate(str) {
+      const parts = str.trim().split(' ');
+      const day = parseInt(parts[0]);
+      const month = months[parts[1]] || 6;
+      return new Date(2026, month - 1, day);
     }
+
+    // Trouver la section du jour ou la prochaine
+    let target = null;
+    for (const sec of sections) {
+      const d = parseMatchDate(sec.dataset.date || '');
+      const secDay = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+      const today  = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      if (secDay >= today) { target = sec; break; }
+    }
+    // Fallback : première section
+    if (!target) target = sections[0];
+    if (target) setTimeout(() => target.scrollIntoView({ behavior: 'smooth', block: 'start' }), 200);
   }, 300);
 }
 
@@ -1460,11 +1462,6 @@ function renderRanking() {
             </div>
           </td>
           <td>${s.j}</td>
-          <td>${s.g}</td>
-          <td>${s.n}</td>
-          <td>${s.p}</td>
-          <td>${s.bp}</td>
-          <td>${s.bc}</td>
           <td>${diffStr}</td>
           <td><span class="ranking-pts">${s.pts}</span></td>
         </tr>`;
@@ -1481,13 +1478,8 @@ function renderRanking() {
         <thead>
           <tr>
             <th>#</th><th>Équipe</th>
-            <th title="Matchs joués">J</th>
-            <th title="Victoires">G</th>
-            <th title="Nuls">N</th>
-            <th title="Défaites">P</th>
-            <th title="Buts pour">BP</th>
-            <th title="Buts contre">BC</th>
-            <th title="Différence">+/-</th>
+            <th title="Matchs joués">M</th>
+            <th title="Différence de buts">Diff</th>
             <th title="Points">Pts</th>
           </tr>
         </thead>
