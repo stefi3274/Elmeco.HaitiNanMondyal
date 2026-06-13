@@ -296,36 +296,41 @@ function renderCalendar() {
   function scrollToToday() {
     const now = new Date();
     const months = {
-      'juin':6,'juil':7,'juil.':7,
+      'juin':6,'juil':7,
       'janvier':1,'février':2,'mars':3,'avril':4,'mai':5,
       'juillet':7,'août':8,'septembre':9,'octobre':10,'novembre':11,'décembre':12
     };
     const sections = Array.from(document.querySelectorAll('#matchesContainer .phase-section'));
     if (!sections.length) return;
 
-    const todayMs = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    // Date du jour en local (jour/mois/année sans heure)
+    const todayDay   = now.getDate();
+    const todayMonth = now.getMonth() + 1; // 1-12
 
     function parseSectionDate(str) {
       if (!str) return null;
       const parts = str.trim().split(' ');
-      const day = parseInt(parts[0]);
+      const day   = parseInt(parts[0]);
       const month = months[parts[1]];
       if (!month || isNaN(day)) return null;
-      return new Date(2026, month - 1, day).getTime();
+      return { day, month };
     }
 
-    // Chercher la section du jour, ou la prochaine
+    function dateGTE(a, bDay, bMonth) {
+      // a >= b ?
+      if (a.month !== bMonth) return a.month >= bMonth;
+      return a.day >= bDay;
+    }
+
     let target = null;
     for (const sec of sections) {
-      const ms = parseSectionDate(sec.dataset.date);
-      if (ms !== null && ms >= todayMs) { target = sec; break; }
+      const d = parseSectionDate(sec.dataset.date);
+      if (d && dateGTE(d, todayDay, todayMonth)) { target = sec; break; }
     }
-    // Fallback : première section
     if (!target) target = sections[sections.length - 1];
     if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
-  // Double délai pour s'assurer que le DOM et applyFilters sont prêts
   setTimeout(() => requestAnimationFrame(scrollToToday), 400);
 }
 
