@@ -1462,6 +1462,8 @@ function renderRanking() {
             </div>
           </td>
           <td>${s.j}</td>
+          <td>${s.bp}</td>
+          <td>${s.bc}</td>
           <td>${diffStr}</td>
           <td><span class="ranking-pts">${s.pts}</span></td>
         </tr>`;
@@ -1478,7 +1480,9 @@ function renderRanking() {
         <thead>
           <tr>
             <th>#</th><th>Équipe</th>
-            <th title="Matchs joués">M</th>
+            <th title="Matchs joués">MJ</th>
+            <th title="Buts marqués">BM</th>
+            <th title="Buts encaissés">BE</th>
             <th title="Différence de buts">Diff</th>
             <th title="Points">Pts</th>
           </tr>
@@ -2725,6 +2729,10 @@ window._applyFbScores = function(fbScores) {
   } catch(e) {}
   // Rafraîchit les matchs d'Haïti et favoris si visibles
   try { if (typeof renderHaitiMatches === 'function') renderHaitiMatches(); } catch(e) {}
+  // Rafraîchit le classement et les groupes si visibles
+  try { if (typeof renderRanking === 'function') renderRanking(); } catch(e) {}
+  try { if (typeof renderGroups === 'function') renderGroups(); } catch(e) {}
+  try { if (typeof renderScorers === 'function') renderScorers(); } catch(e) {}
 };
 
 // ── Accès admin secret : triple clic sur le ballon ⚽ ──────────────────
