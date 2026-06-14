@@ -317,6 +317,7 @@ function renderCalendar() {
     const section = document.createElement('div');
     section.className = 'phase-section past-section';
     section.dataset.date = date;
+    section.dataset.pastHidden = '1';
     section.style.display = 'none';
     section.innerHTML = `<div class="phase-title">${date} 2026</div>`;
     const grid = document.createElement('div');
@@ -345,14 +346,24 @@ function renderCalendar() {
 function togglePastMatches() {
   const sections = document.querySelectorAll('#matchesContainer .past-section');
   const btn = document.querySelector('#pastMatchesBtn button');
-  const visible = sections[0] && sections[0].style.display !== 'none';
-  sections.forEach(s => s.style.display = visible ? 'none' : '');
+  const currentlyHidden = sections[0] && sections[0].dataset.pastHidden === '1';
+  sections.forEach(s => {
+    if (currentlyHidden) {
+      s.dataset.pastHidden = '0';
+      s.style.display = '';
+    } else {
+      s.dataset.pastHidden = '1';
+      s.style.display = 'none';
+    }
+  });
   if (btn) {
-    btn.textContent = visible
-      ? `⬆ Voir les matchs passés (${sections.length} journées)`
-      : '⬇ Cacher les matchs passés';
+    btn.textContent = currentlyHidden
+      ? '⬇ Cacher les matchs passés'
+      : `⬆ Voir les matchs passés (${sections.length} journées)`;
   }
-  if (!visible && sections[0]) sections[0].scrollIntoView({ behavior: 'smooth', block: 'start' });
+  if (currentlyHidden && sections[0]) {
+    sections[0].scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 }
 
 function computeStandings(letter) {
@@ -635,6 +646,11 @@ function applyFilters() {
     card.style.display = (groupOk && searchOk && dateOk && cityOk && stadeOk) ? '' : 'none';
   });
   document.querySelectorAll('#matchesContainer .phase-section').forEach(sec => {
+    // Ne pas réafficher les sections passées si elles sont en mode "caché"
+    if (sec.classList.contains('past-section') && sec.dataset.pastHidden === '1') {
+      sec.style.display = 'none';
+      return;
+    }
     const visible = [...sec.querySelectorAll('.match-card')].some(c => c.style.display !== 'none');
     sec.style.display = visible ? '' : 'none';
   });
@@ -784,6 +800,8 @@ function checkAdminPwd() {
     showAdminPanel();
     // Re-render pour faire apparaître les éditeurs de score
     if (typeof applyFilters === 'function') applyFilters();
+    // Démarrer le mode maître : cet appareil alimente l'API → Firebase
+    if (typeof window.startMasterMode === 'function') window.startMasterMode();
   } else {
     const err = $('adminLoginError');
     if (err) err.textContent = '❌ Mot de passe incorrect';
@@ -2445,19 +2463,77 @@ function processApiFixtures(fixtures) {
     if (homeGoals === null || awayGoals === null) return;
 
     const existing = SCORES[match.id];
-    const newHome = m.home === home ? homeGoals : awayGoals;
-    const newAway = m.home === home ? awayGoals : homeGoals;
+    const newHome = match.home === home ? homeGoals : awayGoals;
+    const newAway = match.home === home ? awayGoals : homeGoals;
 
     if (!existing || existing.home !== newHome || existing.away !== newAway) {
-      SCORES[match.id] = { home: newHome, away: newAway, scorers: [], status };
+      SCORES[match.id] = {
+        home: newHome,
+        away: newAway,
+        scorers: existing && existing.scorers ? existing.scorers : [],
+        status
+      };
       saveState({ scores: SCORES });
       updated = true;
-
       updateMatchCardScore(match.id, newHome, newAway, status);
+
+      // Si le match est terminé, récupérer les buteurs
+      if (status === 'FT' || status === 'AET' || status === 'PEN') {
+        fetchMatchScorers(fix.fixture.id, match.id, home, away);
+      }
     }
   });
 
   if (updated) { saveState({ scores: SCORES }); }
+}
+
+// Récupère les buteurs d'un match terminé via l'endpoint events
+async function fetchMatchScorers(apiFixtureId, localMatchId, homeName, awayName) {
+  // Ne pas re-fetch si on a déjà les buteurs
+  const sc = SCORES[localMatchId];
+  if (sc && sc.scorers && sc.scorers.length > 0) return;
+  if (!apiFixtureId) return;
+  try {
+    const url = `https://api-football-v1.p.rapidapi.com/v3/fixtures/events?fixture=${apiFixtureId}`;
+    const res = await fetch(url, {
+      headers: {
+        'X-RapidAPI-Key': RAPIDAPI_KEY,
+        'X-RapidAPI-Host': 'api-football-v1.p.rapidapi.com'
+      }
+    });
+    const data = await res.json();
+    if (!data.response || !data.response.length) return;
+
+    const scorers = [];
+    data.response.forEach(ev => {
+      // On ne garde que les buts (pas les cartons, remplacements...)
+      if (ev.type === 'Goal') {
+        // Ignorer les buts manqués (Missed Penalty)
+        if (ev.detail && ev.detail.toLowerCase().includes('missed')) return;
+        const playerName = ev.player && ev.player.name ? ev.player.name : 'But';
+        const teamName = ev.team && ev.team.name ? normalizeTeamName(ev.team.name) : '';
+        const minute = ev.time && ev.time.elapsed ? ev.time.elapsed : '';
+        // Marquer les buts contre son camp
+        const isOwnGoal = ev.detail && ev.detail.toLowerCase().includes('own goal');
+        scorers.push({
+          team: teamName,
+          name: playerName + (isOwnGoal ? ' (csc)' : ''),
+          minute: String(minute)
+        });
+      }
+    });
+
+    if (scorers.length > 0 && SCORES[localMatchId]) {
+      SCORES[localMatchId].scorers = scorers;
+      saveState({ scores: SCORES });
+      // Publier sur Firebase pour tous
+      if (window.fbSaveScore) {
+        try { window.fbSaveScore(localMatchId, SCORES[localMatchId]); } catch(e) {}
+      }
+      // Rafraîchir le classement des buteurs
+      if (typeof renderScorers === 'function') renderScorers();
+    }
+  } catch(e) {}
 }
 
 function updateMatchCardScore(matchId, home, away, status) {
@@ -2483,8 +2559,15 @@ function initAutoScores() {
   const wcEnd   = new Date('2026-07-20');
 
   if (now < wcStart || now > wcEnd) {
-    
     return;
+  }
+
+  // ── APPAREIL MAÎTRE UNIQUEMENT ──
+  // Seul l'appareil admin (le tien) appelle l'API et alimente Firebase.
+  // Tous les autres visiteurs lisent les scores depuis Firebase (syncScores).
+  // Cela protège le quota API : 1 appareil au lieu de N visiteurs.
+  if (!window.adminAuthenticated) {
+    return; // visiteurs normaux : pas d'appel API, ils lisent Firebase
   }
 
   fetchTodayScores();
@@ -2493,8 +2576,21 @@ function initAutoScores() {
     fetchLiveScores();
     fetchTodayScores();
   }, 180000);
-
 }
+
+// Démarrer/arrêter le mode maître quand on devient admin
+window.startMasterMode = function() {
+  if (_apiTimer) return; // déjà actif
+  const now = new Date();
+  const wcStart = new Date('2026-06-11');
+  const wcEnd   = new Date('2026-07-20');
+  if (now < wcStart || now > wcEnd) return;
+  fetchTodayScores();
+  _apiTimer = setInterval(() => {
+    fetchLiveScores();
+    fetchTodayScores();
+  }, 180000);
+};
 
 window.renderAdminComments = renderAdminComments;
 window.renderCommentsList  = renderCommentsList;
