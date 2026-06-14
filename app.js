@@ -278,60 +278,81 @@ function renderCalendar() {
     if (mA !== mB) return mA - mB;
     return parseInt(partsA[0]) - parseInt(partsB[0]);
   });
-  sortedDates.forEach(date => {
-    const ms = byDate[date];
+
+  // Date d'aujourd'hui (jour + mois local)
+  const now = new Date();
+  const todayDay   = now.getDate();
+  const todayMonth = now.getMonth() + 1;
+  const months = {'juin':6,'juil':7};
+
+  function isPassee(dateStr) {
+    const parts = dateStr.trim().split(' ');
+    const day   = parseInt(parts[0]);
+    const month = months[parts[1]] || 0;
+    if (month !== todayMonth) return month < todayMonth;
+    return day < todayDay;
+  }
+
+  // Créer le bouton "Voir les matchs passés"
+  const pastDates = sortedDates.filter(d => isPassee(d));
+  const futureDates = sortedDates.filter(d => !isPassee(d));
+
+  // Bouton pour afficher les matchs passés
+  if (pastDates.length > 0) {
+    const btnWrapper = document.createElement('div');
+    btnWrapper.id = 'pastMatchesBtn';
+    btnWrapper.style.cssText = 'text-align:center;padding:12px 0;';
+    btnWrapper.innerHTML = `
+      <button onclick="togglePastMatches()" style="
+        background:none;border:1px solid var(--border);border-radius:20px;
+        color:var(--text2);padding:8px 20px;font-size:13px;cursor:pointer;
+        font-family:var(--font-ui);">
+        ⬆ Voir les matchs passés (${pastDates.length} journées)
+      </button>`;
+    cont.appendChild(btnWrapper);
+  }
+
+  // Sections des matchs passés (cachées par défaut)
+  pastDates.forEach(date => {
+    const section = document.createElement('div');
+    section.className = 'phase-section past-section';
+    section.dataset.date = date;
+    section.style.display = 'none';
+    section.innerHTML = `<div class="phase-title">${date} 2026</div>`;
+    const grid = document.createElement('div');
+    grid.className = 'matches-grid';
+    byDate[date].forEach(m => renderMatchCard(m, grid));
+    section.appendChild(grid);
+    cont.appendChild(section);
+  });
+
+  // Sections du jour et à venir (visibles)
+  futureDates.forEach(date => {
     const section = document.createElement('div');
     section.className = 'phase-section';
     section.dataset.date = date;
     section.innerHTML = `<div class="phase-title">${date} 2026</div>`;
     const grid = document.createElement('div');
     grid.className = 'matches-grid';
-    ms.forEach(m => renderMatchCard(m, grid));
+    byDate[date].forEach(m => renderMatchCard(m, grid));
     section.appendChild(grid);
     cont.appendChild(section);
   });
+
   applyFilters();
+}
 
-  // Scroll vers le match du jour ou le prochain à venir
-  function scrollToToday() {
-    const now = new Date();
-    const months = {
-      'juin':6,'juil':7,
-      'janvier':1,'février':2,'mars':3,'avril':4,'mai':5,
-      'juillet':7,'août':8,'septembre':9,'octobre':10,'novembre':11,'décembre':12
-    };
-    const sections = Array.from(document.querySelectorAll('#matchesContainer .phase-section'));
-    if (!sections.length) return;
-
-    // Date du jour en local (jour/mois/année sans heure)
-    const todayDay   = now.getDate();
-    const todayMonth = now.getMonth() + 1; // 1-12
-
-    function parseSectionDate(str) {
-      if (!str) return null;
-      const parts = str.trim().split(' ');
-      const day   = parseInt(parts[0]);
-      const month = months[parts[1]];
-      if (!month || isNaN(day)) return null;
-      return { day, month };
-    }
-
-    function dateGTE(a, bDay, bMonth) {
-      // a >= b ?
-      if (a.month !== bMonth) return a.month >= bMonth;
-      return a.day >= bDay;
-    }
-
-    let target = null;
-    for (const sec of sections) {
-      const d = parseSectionDate(sec.dataset.date);
-      if (d && dateGTE(d, todayDay, todayMonth)) { target = sec; break; }
-    }
-    if (!target) target = sections[sections.length - 1];
-    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+function togglePastMatches() {
+  const sections = document.querySelectorAll('#matchesContainer .past-section');
+  const btn = document.querySelector('#pastMatchesBtn button');
+  const visible = sections[0] && sections[0].style.display !== 'none';
+  sections.forEach(s => s.style.display = visible ? 'none' : '');
+  if (btn) {
+    btn.textContent = visible
+      ? `⬆ Voir les matchs passés (${sections.length} journées)`
+      : '⬇ Cacher les matchs passés';
   }
-
-  setTimeout(() => requestAnimationFrame(scrollToToday), 400);
+  if (!visible && sections[0]) sections[0].scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function computeStandings(letter) {
@@ -1018,6 +1039,10 @@ function saveScore() {
     renderStarred();
   }
   renderHaitiMatches();
+  // Rafraîchir classement, groupes et buteurs immédiatement
+  try { if (typeof renderRanking === 'function') renderRanking(); } catch(e) {}
+  try { if (typeof renderGroups === 'function') renderGroups(); } catch(e) {}
+  try { if (typeof renderScorers === 'function') renderScorers(); } catch(e) {}
 
   closeModal();
 }
@@ -2288,6 +2313,11 @@ function saveInlineScore(matchId) {
       card.replaceWith(newCard.firstChild);
     }
   }
+
+  // Rafraîchir classement, groupes et buteurs immédiatement
+  try { if (typeof renderRanking === 'function') renderRanking(); } catch(e) {}
+  try { if (typeof renderGroups === 'function') renderGroups(); } catch(e) {}
+  try { if (typeof renderScorers === 'function') renderScorers(); } catch(e) {}
 }
 
 const RAPIDAPI_KEY = 'b54773ac56msheedcadcc3491eaep1b4037jsnd742271224e0';
