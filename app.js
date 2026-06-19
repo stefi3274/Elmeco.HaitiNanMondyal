@@ -873,7 +873,7 @@ function showView(view, btn) {
 }
 
 function showViewInternal(view, btn) {
-  ['calendar','groups','knockout','starred','ranking','scorers','pronostics','ambassadors'].forEach(v => {
+  ['calendar','groups','knockout','starred','ranking','scorers','bestthirds','pronostics','ambassadors'].forEach(v => {
     const el = $('view-' + v);
     if (el) el.style.display = 'none';
   });
@@ -884,6 +884,7 @@ function showViewInternal(view, btn) {
   if (view === 'starred')      renderStarred();
   if (view === 'ranking')      renderRanking();
   if (view === 'scorers')      renderScorers();
+  if (view === 'bestthirds')   renderBestThirds();
   if (view === 'pronostics')   renderPronostics();
   if (view === 'ambassadors')  renderAmbassadors();
 }
@@ -1061,6 +1062,7 @@ function saveScore() {
   try { if (typeof renderRanking === 'function') renderRanking(); } catch(e) {}
   try { if (typeof renderGroups === 'function') renderGroups(); } catch(e) {}
   try { if (typeof renderScorers === 'function') renderScorers(); } catch(e) {}
+  try { if (typeof renderBestThirds === 'function') renderBestThirds(); } catch(e) {}
 
   closeModal();
 }
@@ -1551,6 +1553,83 @@ function renderRanking() {
   });
 }
 
+// Classement provisoire des meilleurs 3es (règle FIFA : points puis diff buts)
+function renderBestThirds() {
+  const cont = $('bestThirdsContent');
+  if (!cont) return;
+
+  const groups = ['A','B','C','D','E','F','G','H','I','J','K','L'];
+  const thirds = [];
+
+  groups.forEach(letter => {
+    const standings = computeStandings(letter);
+    if (standings && standings.length >= 3) {
+      const third = standings[2]; // 3e du groupe
+      thirds.push({
+        name: third.name,
+        group: letter,
+        j: third.j,
+        pts: third.pts,
+        bp: third.bp,
+        bc: third.bc,
+        diff: third.bp - third.bc
+      });
+    }
+  });
+
+  // Tri FIFA : points, puis diff buts, puis buts marqués
+  thirds.sort((a, b) => {
+    if (b.pts !== a.pts) return b.pts - a.pts;
+    if (b.diff !== a.diff) return b.diff - a.diff;
+    return b.bp - a.bp;
+  });
+
+  if (!thirds.length) {
+    cont.innerHTML = '<div class="scorers-empty">📊 Classement disponible une fois les groupes joués.</div>';
+    return;
+  }
+
+  const rows = thirds.map((t, i) => {
+    const diffStr = t.diff > 0 ? `<span class="rank-diff-pos">+${t.diff}</span>` :
+                    t.diff < 0 ? `<span class="rank-diff-neg">${t.diff}</span>` :
+                    `<span style="color:var(--text2)">0</span>`;
+    const isHaiti = t.name === 'Haïti';
+    // 8 premiers qualifiés (vert), 4 derniers éliminés (rouge)
+    const posClass = i < 8 ? 'pos-qualif' : 'pos-elim';
+    return `
+      <tr class="${i < 8 ? 'rank-qualified' : ''}">
+        <td><span class="rank-pos-badge ${posClass}">${i + 1}</span></td>
+        <td>
+          <div class="rank-team-cell">
+            <span style="font-size:18px;">${getFlag(t.name)}</span>
+            <span${isHaiti ? ' style="color:#d4213d"' : ''}>${t.name}</span>
+            <span style="font-size:10px;color:var(--text2);margin-left:4px;">(Gr. ${t.group})</span>
+          </div>
+        </td>
+        <td>${t.j}</td>
+        <td>${diffStr}</td>
+        <td><span class="ranking-pts">${t.pts}</span></td>
+      </tr>`;
+  }).join('');
+
+  cont.innerHTML = `
+    <div style="padding:10px 14px;font-family:var(--font-ui);font-size:12px;color:var(--text2);line-height:1.5;">
+      Classement provisoire des 3es de chaque groupe.<br>
+      Les <span style="color:#1db954;font-weight:700;">8 meilleurs (vert)</span> se qualifient pour les 16es de finale.
+    </div>
+    <table class="ranking-table">
+      <thead>
+        <tr>
+          <th>#</th><th>Équipe</th>
+          <th title="Matchs joués">MJ</th>
+          <th title="Différence de buts">Diff</th>
+          <th title="Points">Pts</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
 function renderScorers() {
   const cont = $('scorersContent');
   if (!cont) return;
@@ -1594,7 +1673,6 @@ function renderScorers() {
           <div class="scorer-team">${getFlag(s.team)} ${s.team}</div>
         </td>
         <td class="right scorer-goals">${s.goals}</td>
-        <td class="right scorer-minutes">${s.minutes.join(' · ') || '—'}</td>
       </tr>`;
   }).join('');
 
@@ -1605,7 +1683,6 @@ function renderScorers() {
           <th style="width:40px;">#</th>
           <th>Joueur</th>
           <th class="right">⚽ Buts</th>
-          <th class="right">Minutes</th>
         </tr>
       </thead>
       <tbody>${rows}</tbody>
@@ -2336,6 +2413,7 @@ function saveInlineScore(matchId) {
   try { if (typeof renderRanking === 'function') renderRanking(); } catch(e) {}
   try { if (typeof renderGroups === 'function') renderGroups(); } catch(e) {}
   try { if (typeof renderScorers === 'function') renderScorers(); } catch(e) {}
+  try { if (typeof renderBestThirds === 'function') renderBestThirds(); } catch(e) {}
 }
 
 const RAPIDAPI_KEY = 'b54773ac56msheedcadcc3491eaep1b4037jsnd742271224e0';
@@ -2873,6 +2951,7 @@ window._applyFbScores = function(fbScores) {
   try { if (typeof renderRanking === 'function') renderRanking(); } catch(e) {}
   try { if (typeof renderGroups === 'function') renderGroups(); } catch(e) {}
   try { if (typeof renderScorers === 'function') renderScorers(); } catch(e) {}
+  try { if (typeof renderBestThirds === 'function') renderBestThirds(); } catch(e) {}
 };
 
 // ── Accès admin secret : triple clic sur le ballon ⚽ ──────────────────
