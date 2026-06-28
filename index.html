@@ -2,23 +2,25 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
+
 <!-- ─── ONESIGNAL ─── -->
 <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
 <script>
-  window.OneSignalDeferred = window.OneSignalDeferred || [];
-  OneSignalDeferred.push(async function(OneSignal) {
-    await OneSignal.init({
-      appId: "d7e2c0fb-a436-496d-bd5d-c1b9a3414e5e",
-      notifyButton: { enable: false }, // on gère nous-mêmes le bouton
-      welcomeNotification: {
-        title: "🇭🇹 AYITI nan Mondyal 2026",
-        message: "Tu recevras des alertes avant tes matchs favoris !"
-      }
-    });
-    // Expose pour le reste de l'app
-    window._oneSignal = OneSignal;
-  });
+  window.OneSignalDeferred = window.OneSignalDeferred || [];
+  OneSignalDeferred.push(async function(OneSignal) {
+    await OneSignal.init({
+      appId: "d7e2c0fb-a436-496d-bd5d-c1b9a3414e5e",
+      notifyButton: { enable: false }, // on gère nous-mêmes le bouton
+      welcomeNotification: {
+        title: "🇭🇹 AYITI nan Mondyal 2026",
+        message: "Tu recevras des alertes avant tes matchs favoris !"
+      }
+    });
+    // Expose pour le reste de l'app
+    window._oneSignal = OneSignal;
+  });
 </script>
+
 <!-- ─── PWA ─── -->
 <meta name="theme-color" content="#030508">
 <meta name="mobile-web-app-capable" content="yes">
@@ -27,17 +29,20 @@
 <meta name="apple-mobile-web-app-title" content="AYITI 2026">
 <link rel="manifest" href="manifest.json">
 <script>
-  // Register Service Worker
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js').catch(() => {});
-  }
+  // Register Service Worker
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
 </script>
+
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AYITI nan Mondyal 2026 — Bouyon Boul</title>
 <meta name="description" content="Calendrier interactif de la Coupe du Monde 2026. 104 matchs, 48 équipes, scores en temps réel. Fait pour la diaspora haïtienne.">
+
 <!-- ─── FAVICON ─── -->
 <link rel="icon" type="image/png" href="favicon.png">
 <link rel="apple-touch-icon" href="favicon-192.png">
+
 <!-- ─── OG / SOCIAL ─── -->
 <meta property="og:title" content="AYITI nan Mondyal 2026 — Bouyon Boul">
 <meta property="og:description" content="Calendrier interactif · 104 matchs · 48 équipes · Scores en temps réel. Suiv les Grenadiers !">
@@ -52,1033 +57,1122 @@
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@400;600&family=Inter:wght@400;600&display=swap" rel="stylesheet">
 <link href="https://fonts.cdnfonts.com/css/comic-sans-ms" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
+
 <!-- ─── FIREBASE SDK ─── -->
 <script type="module">
-  import { initializeApp }        from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
-  import { getDatabase, ref, set, get, onValue, push, update, remove }
-                                   from "https://www.gstatic.com/firebasejs/12.13.0/firebase-database.js";
-  const firebaseConfig = {
-    apiKey:            "AIzaSyDQNBaTaTtrFWdGbKc7h4AjENRhoDz_uBI",
-    authDomain:        "kalandriye-enteraktif.firebaseapp.com",
-    databaseURL:       "https://kalandriye-enteraktif-default-rtdb.firebaseio.com",
-    projectId:         "kalandriye-enteraktif",
-    storageBucket:     "kalandriye-enteraktif.firebasestorage.app",
-    messagingSenderId: "466981214232",
-    appId:             "1:466981214232:web:5d1b0054cdcb8515f6cb6d"
-  };
-  const app = initializeApp(firebaseConfig);
-  const db  = getDatabase(app);
-  // ── Génère un userId anonyme persistant ──
-  let userId = localStorage.getItem('_uid');
-  if (!userId) {
-    userId = 'u_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
-    localStorage.setItem('_uid', userId);
-  }
-  // ── Expose les fonctions Firebase au scope global ──
-  window._fb = { db, ref, set, get, onValue, push, update, remove, userId };
-  // ── Sync réactions depuis Firebase ──
-  function syncReactions() {
-    onValue(ref(db, 'reactions'), snap => {
-      const data = snap.val() || {};
-      // Pour chaque match, met à jour les compteurs affichés
-      Object.entries(data).forEach(([matchId, reactions]) => {
-        const container = document.getElementById('reactions-' + matchId);
-        if (!container) return;
-        const myReaction = reactions[userId] || null;
-        // Compte par type
-        const counts = {};
-        Object.entries(reactions).forEach(([uid, key]) => {
-          if (uid === userId) return;
-          counts[key] = (counts[key] || 0) + 1;
-        });
-        if (myReaction) counts[myReaction] = (counts[myReaction] || 0) + 1;
-        container.querySelectorAll('.reaction-btn').forEach(btn => {
-          const key = btn.dataset.key;
-          if (!key) return;
-          const count = counts[key] || 0;
-          const reacted = myReaction === key;
-          btn.classList.toggle('reacted', reacted);
-          btn.querySelector('.reaction-count').textContent = count || '';
-        });
-      });
-    });
-  }
-  // ── Sync scores depuis Firebase (lecture pour TOUS les visiteurs) ──
-  function syncScores() {
-    onValue(ref(db, 'scores'), snap => {
-      const data = snap.val() || {};
-      // Stocke globalement et déclenche le rafraîchissement de l'app
-      window._fbScores = data;
-      if (typeof window._applyFbScores === 'function') {
-        window._applyFbScores(data);
-      }
-    });
-  }
-  // ── Écriture d'un score vers Firebase (réservé admin) ──
-  window.fbSaveScore = function(matchId, scoreObj) {
-    // scoreObj = {home, away, scorers, mvp} ou null pour effacer
-    if (scoreObj === null || scoreObj === undefined) {
-      return remove(ref(db, 'scores/' + matchId));
-    }
-    return set(ref(db, 'scores/' + matchId), scoreObj);
-  };
-  // ── Sync commentaires depuis Firebase ──
-  function syncComments() {
-    onValue(ref(db, 'comments'), snap => {
-      const data = snap.val() || {};
-      // Stocke dans window pour que le panel admin y accède
-      window._fbComments = data;
-      // Refresh le panel admin si ouvert
-      if (document.getElementById('adminPanel') &&
-          document.getElementById('adminPanel').style.display !== 'none') {
-        if (typeof window.renderAdminComments === 'function') window.renderAdminComments();
-      }
-      // Refresh commentaires de chaque match si visible
-      Object.keys(data).forEach(matchId => {
-        const el = document.getElementById('comments-list-' + matchId);
-        if (el && typeof window.renderCommentsList === 'function') {
-          window.renderCommentsList(matchId);
-        }
-      });
-    });
-  }
-  // ── Expose reactMatch vers Firebase ──
-  window.fbReactMatch = function(matchId, key) {
-    const r = ref(db, 'reactions/' + matchId + '/' + userId);
-    get(r).then(snap => {
-      const prev = snap.val();
-      if (prev === key) {
-        remove(r); // toggle off
-      } else {
-        set(r, key);
-      }
-    });
-  };
-  // ── Poste un commentaire (en attente) ──
-  window.fbPostComment = function(matchId, text, pseudo) {
-    const commentsRef = ref(db, 'comments/' + matchId);
-    push(commentsRef, {
-      pseudo:    pseudo || 'Anonyme',
-      text:      text,
-      userId:    userId,
-      timestamp: Date.now(),
-      approved:  false
-    });
-  };
-  // ── Admin : approuve un commentaire ──
-  window.fbApproveComment = function(matchId, commentId) {
-    update(ref(db, 'comments/' + matchId + '/' + commentId), { approved: true });
-  };
-  // ── Admin : supprime un commentaire ──
-  window.fbDeleteComment = function(matchId, commentId) {
-    remove(ref(db, 'comments/' + matchId + '/' + commentId));
-  };
-  // ── Sync pronostics depuis Firebase ──
-  function syncPronos() {
-    onValue(ref(db, 'pronos'), snap => {
-      window._fbPronos = snap.val() || {};
-    });
-  }
-  // ── Sync users/ambassadeurs depuis Firebase ──
-  function syncUsers() {
-    onValue(ref(db, 'users'), snap => {
-      window._fbUsers = snap.val() || {};
-      // Restaure le profil de l'utilisateur courant depuis Firebase
-      const uid = userId;
-      const fbProfile = window._fbUsers[uid];
-      if (fbProfile && fbProfile.name) {
-        // Met à jour le profil local depuis Firebase
-        const localRaw = localStorage.getItem('_userProfile');
-        let local = null;
-        try { local = localRaw ? JSON.parse(localRaw) : null; } catch(e) {}
-        if (!local || !local.name || local.name === 'Visiteur' || local.name === 'Anonyme') {
-          // Restaure depuis Firebase
-          const restored = {
-            name: fbProfile.name,
-            avatar: fbProfile.avatar || '⚽',
-            points: fbProfile.points || 0,
-            joined: fbProfile.joined || Date.now()
-          };
-          localStorage.setItem('_userProfile', JSON.stringify(restored));
-          if (typeof window._restoreUser === 'function') window._restoreUser(restored);
-        }
-      }
-      const cont = document.getElementById('ambassadorsContent');
-      if (cont && document.getElementById('view-ambassadors') &&
-          document.getElementById('view-ambassadors').style.display !== 'none') {
-        if (typeof window.renderAmbassadors === 'function') window.renderAmbassadors();
-      }
-    });
-  }
-  // ── Démarre la sync après chargement ──
-  window.addEventListener('load', () => {
-    syncReactions();
-   // syncComments();
-    syncScores();
-    syncPronos();
-    syncUsers();
-  });
+  import { initializeApp }        from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
+  import { getDatabase, ref, set, get, onValue, push, update, remove }
+                                   from "https://www.gstatic.com/firebasejs/12.13.0/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey:            "AIzaSyDQNBaTaTtrFWdGbKc7h4AjENRhoDz_uBI",
+    authDomain:        "kalandriye-enteraktif.firebaseapp.com",
+    databaseURL:       "https://kalandriye-enteraktif-default-rtdb.firebaseio.com",
+    projectId:         "kalandriye-enteraktif",
+    storageBucket:     "kalandriye-enteraktif.firebasestorage.app",
+    messagingSenderId: "466981214232",
+    appId:             "1:466981214232:web:5d1b0054cdcb8515f6cb6d"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db  = getDatabase(app);
+
+  // ── Génère un userId anonyme persistant ──
+  let userId = localStorage.getItem('_uid');
+  if (!userId) {
+    userId = 'u_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+    localStorage.setItem('_uid', userId);
+  }
+
+  // ── Expose les fonctions Firebase au scope global ──
+  window._fb = { db, ref, set, get, onValue, push, update, remove, userId };
+
+  // ── Sync réactions depuis Firebase ──
+  function syncReactions() {
+    onValue(ref(db, 'reactions'), snap => {
+      const data = snap.val() || {};
+      // Pour chaque match, met à jour les compteurs affichés
+      Object.entries(data).forEach(([matchId, reactions]) => {
+        const container = document.getElementById('reactions-' + matchId);
+        if (!container) return;
+        const myReaction = reactions[userId] || null;
+        // Compte par type
+        const counts = {};
+        Object.entries(reactions).forEach(([uid, key]) => {
+          if (uid === userId) return;
+          counts[key] = (counts[key] || 0) + 1;
+        });
+        if (myReaction) counts[myReaction] = (counts[myReaction] || 0) + 1;
+
+        container.querySelectorAll('.reaction-btn').forEach(btn => {
+          const key = btn.dataset.key;
+          if (!key) return;
+          const count = counts[key] || 0;
+          const reacted = myReaction === key;
+          btn.classList.toggle('reacted', reacted);
+          btn.querySelector('.reaction-count').textContent = count || '';
+        });
+      });
+    });
+  }
+
+  // ── Sync scores depuis Firebase (lecture pour TOUS les visiteurs) ──
+  function syncScores() {
+    onValue(ref(db, 'scores'), snap => {
+      const data = snap.val() || {};
+      // Stocke globalement et déclenche le rafraîchissement de l'app
+      window._fbScores = data;
+      if (typeof window._applyFbScores === 'function') {
+        window._applyFbScores(data);
+      }
+    });
+  }
+
+  // ── Écriture d'un score vers Firebase (réservé admin) ──
+  window.fbSaveScore = function(matchId, scoreObj) {
+    // scoreObj = {home, away, scorers, mvp} ou null pour effacer
+    if (scoreObj === null || scoreObj === undefined) {
+      return remove(ref(db, 'scores/' + matchId));
+    }
+    return set(ref(db, 'scores/' + matchId), scoreObj);
+  };
+
+  // ── Sync commentaires depuis Firebase ──
+  function syncComments() {
+    onValue(ref(db, 'comments'), snap => {
+      const data = snap.val() || {};
+      // Stocke dans window pour que le panel admin y accède
+      window._fbComments = data;
+      // Refresh le panel admin si ouvert
+      if (document.getElementById('adminPanel') &&
+          document.getElementById('adminPanel').style.display !== 'none') {
+        if (typeof window.renderAdminComments === 'function') window.renderAdminComments();
+      }
+      // Refresh commentaires de chaque match si visible
+      Object.keys(data).forEach(matchId => {
+        const el = document.getElementById('comments-list-' + matchId);
+        if (el && typeof window.renderCommentsList === 'function') {
+          window.renderCommentsList(matchId);
+        }
+      });
+    });
+  }
+
+  // ── Expose reactMatch vers Firebase ──
+  window.fbReactMatch = function(matchId, key) {
+    const r = ref(db, 'reactions/' + matchId + '/' + userId);
+    get(r).then(snap => {
+      const prev = snap.val();
+      if (prev === key) {
+        remove(r); // toggle off
+      } else {
+        set(r, key);
+      }
+    });
+  };
+
+  // ── Poste un commentaire (en attente) ──
+  window.fbPostComment = function(matchId, text, pseudo) {
+    const commentsRef = ref(db, 'comments/' + matchId);
+    push(commentsRef, {
+      pseudo:    pseudo || 'Anonyme',
+      text:      text,
+      userId:    userId,
+      timestamp: Date.now(),
+      approved:  false
+    });
+  };
+
+  // ── Admin : approuve un commentaire ──
+  window.fbApproveComment = function(matchId, commentId) {
+    update(ref(db, 'comments/' + matchId + '/' + commentId), { approved: true });
+  };
+
+  // ── Admin : supprime un commentaire ──
+  window.fbDeleteComment = function(matchId, commentId) {
+    remove(ref(db, 'comments/' + matchId + '/' + commentId));
+  };
+
+  // ── Sync pronostics depuis Firebase ──
+  function syncPronos() {
+    onValue(ref(db, 'pronos'), snap => {
+      window._fbPronos = snap.val() || {};
+    });
+  }
+
+  // ── Sync users/ambassadeurs depuis Firebase ──
+  function syncUsers() {
+    onValue(ref(db, 'users'), snap => {
+      window._fbUsers = snap.val() || {};
+
+      // Restaure le profil de l'utilisateur courant depuis Firebase
+      const uid = userId;
+      const fbProfile = window._fbUsers[uid];
+      if (fbProfile && fbProfile.name) {
+        // Met à jour le profil local depuis Firebase
+        const localRaw = localStorage.getItem('_userProfile');
+        let local = null;
+        try { local = localRaw ? JSON.parse(localRaw) : null; } catch(e) {}
+        if (!local || !local.name || local.name === 'Visiteur' || local.name === 'Anonyme') {
+          // Restaure depuis Firebase
+          const restored = {
+            name: fbProfile.name,
+            avatar: fbProfile.avatar || '⚽',
+            points: fbProfile.points || 0,
+            joined: fbProfile.joined || Date.now()
+          };
+          localStorage.setItem('_userProfile', JSON.stringify(restored));
+          if (typeof window._restoreUser === 'function') window._restoreUser(restored);
+        }
+      }
+
+      const cont = document.getElementById('ambassadorsContent');
+      if (cont && document.getElementById('view-ambassadors') &&
+          document.getElementById('view-ambassadors').style.display !== 'none') {
+        if (typeof window.renderAmbassadors === 'function') window.renderAmbassadors();
+      }
+    });
+  }
+
+  // ── Démarre la sync après chargement ──
+  window.addEventListener('load', () => {
+    syncReactions();
+   // syncComments();
+    syncScores();
+    syncPronos();
+    syncUsers();
+  });
 </script>
+
 <style>
-  /* Couleurs des badges de joueurs — légendes (doré) vs actuels (turquoise) */
-  /* Badges à fond plein, cohérents avec .fiche-title-badge existant */
-  .fiche-title-badge.badge-legende {
-    background: var(--accent);
-    color: #000;
-  }
-  .fiche-title-badge.badge-actuel {
-    background: var(--accent3);
-    color: #000;
-  }
-  /* === Bande aux couleurs du pays (haut de la fiche équipe) === */
-  .fiche-country-band {
-    display: flex;
-    width: 100%;
-    height: 8px;
-    border-radius: 6px;
-    overflow: hidden;
-    margin-bottom: 14px;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.3);
-  }
-  .fiche-country-band span {
-    flex: 1;
-    height: 100%;
-  }
-  /* === Mode admin : édition des scores réservée à l'admin === */
-  /* Le bouton score n'est cliquable (curseur, hover) que pour l'admin.
-     Le score affiché (résultat) reste visible par TOUS les visiteurs. */
-  .score-btn { cursor: default; }
-  body.is-admin .score-btn { cursor: pointer; }
-  /* L'éditeur de score ne peut s'ouvrir que pour l'admin */
-  body:not(.is-admin) .score-inline-editor { display: none !important; }
-  /* Petit badge visuel quand on est en mode admin */
-  body.is-admin .score-btn::after {
-    content: "✎";
-    font-size: 9px;
-    color: var(--accent, #e8b923);
-    margin-left: 2px;
-  }
-  /* === Tableau classement responsive mobile === */
-  @media (max-width: 600px) {
-    .ranking-table { font-size: 11px; }
-    .ranking-table th, .ranking-table td { padding: 6px 4px; }
-    .ranking-table th:nth-child(n+8),
-    .ranking-table td:nth-child(n+8) { display: none; } /* cache +/- sur mobile */
-    .rank-team-cell { gap: 4px; }
-    .rank-team-cell span:first-child { font-size: 14px; }
-    .ranking-pts { font-size: 14px; }
-    .rank-pos-badge { width: 22px; height: 22px; font-size: 11px; }
-  }
-  /* === Sélecteur équipe dans le formulaire d'inscription === */
-  .identity-team-select {
-    width: 100%;
-    padding: 10px 14px;
-    border-radius: 10px;
-    border: 1px solid var(--border);
-    background: var(--card-bg, #131a2e);
-    color: var(--text);
-    font-family: var(--font-ui);
-    font-size: 15px;
-    margin-bottom: 8px;
-    cursor: pointer;
-  }
-  body.theme-light .identity-team-select {
-    background: #f0f4ff;
-    color: #1a1a2e;
-  }
-  /* === Couleurs du classement selon la position === */
-  .standings-rank.pos-qualif {
-    background: #1db954 !important;
-    color: #fff !important;
-  }
-  .standings-rank.pos-attente {
-    background: #e8b923 !important;
-    color: #000 !important;
-  }
-  .standings-rank.pos-elim {
-    background: #e74c3c !important;
-    color: #fff !important;
-  }
-  /* Badge de position sur la page Classement (renderRanking) */
-  .rank-pos-badge {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 26px;
-    height: 26px;
-    border-radius: 6px;
-    font-weight: 800;
-    font-size: 13px;
-  }
-  .rank-pos-badge.pos-qualif { background: #1db954; color: #fff; }
-  .rank-pos-badge.pos-attente { background: #e8b923; color: #000; }
-  .rank-pos-badge.pos-elim { background: #e74c3c; color: #fff; }
-  /* === Couleurs du score selon le résultat === */
-  .score-num.res-win  { color: #1db954 !important; }
-  .score-num.res-loss { color: #e74c3c !important; }
-  /* Nul : blanc par défaut (thème sombre), noir en thème clair */
-  .score-num.res-nul  { color: #fff !important; }
-  body.theme-light .score-num.res-nul { color: #000 !important; }
-  /* === Étoiles dorées scintillantes autour du drapeau d'Haïti (dans les matchs) === */
-  .team-flag.flag-haiti {
-    position: relative;
-    display: inline-block;
-    overflow: visible;
-  }
-  .team-flag.flag-haiti::before,
-  .team-flag.flag-haiti::after {
-    content: "⭐ ✨ ⭐";
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
-    font-size: 10px;
-    letter-spacing: 3px;
-    white-space: nowrap;
-    pointer-events: none;
-    filter: drop-shadow(0 0 3px rgba(232,185,35,0.9));
-  }
-  .team-flag.flag-haiti::before {
-    top: -12px;
-    animation: haiti-star-top 1.8s ease-in-out infinite;
-  }
-  .team-flag.flag-haiti::after {
-    bottom: -12px;
-    animation: haiti-star-bottom 1.8s ease-in-out infinite;
-    animation-delay: 0.9s;
-  }
-  @keyframes haiti-star-top {
-    0%, 100% { opacity: 0.15; transform: translateX(-50%) scale(0.85); }
-    50%      { opacity: 1;    transform: translateX(-50%) scale(1.1); }
-  }
-  @keyframes haiti-star-bottom {
-    0%, 100% { opacity: 0.15; transform: translateX(-50%) scale(0.85); }
-    50%      { opacity: 1;    transform: translateX(-50%) scale(1.1); }
-  }
-  /* Halo doré doux derrière le drapeau d'Haïti */
-  .match-card.match-haiti {
-    border: 1px solid rgba(232,185,35,0.45);
-  }
+  /* Couleurs des badges de joueurs — légendes (doré) vs actuels (turquoise) */
+  /* Badges à fond plein, cohérents avec .fiche-title-badge existant */
+  .fiche-title-badge.badge-legende {
+    background: var(--accent);
+    color: #000;
+  }
+  .fiche-title-badge.badge-actuel {
+    background: var(--accent3);
+    color: #000;
+  }
+
+  /* === Bande aux couleurs du pays (haut de la fiche équipe) === */
+  .fiche-country-band {
+    display: flex;
+    width: 100%;
+    height: 8px;
+    border-radius: 6px;
+    overflow: hidden;
+    margin-bottom: 14px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+  }
+  .fiche-country-band span {
+    flex: 1;
+    height: 100%;
+  }
+
+  /* === Mode admin : édition des scores réservée à l'admin === */
+  /* Le bouton score n'est cliquable (curseur, hover) que pour l'admin.
+     Le score affiché (résultat) reste visible par TOUS les visiteurs. */
+  .score-btn { cursor: default; }
+  body.is-admin .score-btn { cursor: pointer; }
+  /* L'éditeur de score ne peut s'ouvrir que pour l'admin */
+  body:not(.is-admin) .score-inline-editor { display: none !important; }
+  /* Petit badge visuel quand on est en mode admin */
+  body.is-admin .score-btn::after {
+    content: "✎";
+    font-size: 9px;
+    color: var(--accent, #e8b923);
+    margin-left: 2px;
+  }
+
+  /* === Tableau classement responsive mobile === */
+  @media (max-width: 600px) {
+    .ranking-table { font-size: 11px; }
+    .ranking-table th, .ranking-table td { padding: 6px 4px; }
+    .ranking-table th:nth-child(n+8),
+    .ranking-table td:nth-child(n+8) { display: none; } /* cache +/- sur mobile */
+    .rank-team-cell { gap: 4px; }
+    .rank-team-cell span:first-child { font-size: 14px; }
+    .ranking-pts { font-size: 14px; }
+    .rank-pos-badge { width: 22px; height: 22px; font-size: 11px; }
+  }
+
+  /* === Sélecteur équipe dans le formulaire d'inscription === */
+  .identity-team-select {
+    width: 100%;
+    padding: 10px 14px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--card-bg, #131a2e);
+    color: var(--text);
+    font-family: var(--font-ui);
+    font-size: 15px;
+    margin-bottom: 8px;
+    cursor: pointer;
+  }
+  body.theme-light .identity-team-select {
+    background: #f0f4ff;
+    color: #1a1a2e;
+  }
+
+  /* === Couleurs du classement selon la position === */
+  .standings-rank.pos-qualif {
+    background: #1db954 !important;
+    color: #fff !important;
+  }
+  .standings-rank.pos-attente {
+    background: #e8b923 !important;
+    color: #000 !important;
+  }
+  .standings-rank.pos-elim {
+    background: #e74c3c !important;
+    color: #fff !important;
+  }
+  /* Badge de position sur la page Classement (renderRanking) */
+  .rank-pos-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+    font-weight: 800;
+    font-size: 13px;
+  }
+  .rank-pos-badge.pos-qualif { background: #1db954; color: #fff; }
+  .rank-pos-badge.pos-attente { background: #e8b923; color: #000; }
+  .rank-pos-badge.pos-elim { background: #e74c3c; color: #fff; }
+
+  /* === Couleurs du score selon le résultat === */
+  .score-num.res-win  { color: #1db954 !important; }
+  .score-num.res-loss { color: #e74c3c !important; }
+  /* Nul : blanc par défaut (thème sombre), noir en thème clair */
+  .score-num.res-nul  { color: #fff !important; }
+  body.theme-light .score-num.res-nul { color: #000 !important; }
+
+  /* === Étoiles dorées scintillantes autour du drapeau d'Haïti (dans les matchs) === */
+  .team-flag.flag-haiti {
+    position: relative;
+    display: inline-block;
+    overflow: visible;
+  }
+  .team-flag.flag-haiti::before,
+  .team-flag.flag-haiti::after {
+    content: "⭐ ✨ ⭐";
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 10px;
+    letter-spacing: 3px;
+    white-space: nowrap;
+    pointer-events: none;
+    filter: drop-shadow(0 0 3px rgba(232,185,35,0.9));
+  }
+  .team-flag.flag-haiti::before {
+    top: -12px;
+    animation: haiti-star-top 1.8s ease-in-out infinite;
+  }
+  .team-flag.flag-haiti::after {
+    bottom: -12px;
+    animation: haiti-star-bottom 1.8s ease-in-out infinite;
+    animation-delay: 0.9s;
+  }
+  @keyframes haiti-star-top {
+    0%, 100% { opacity: 0.15; transform: translateX(-50%) scale(0.85); }
+    50%      { opacity: 1;    transform: translateX(-50%) scale(1.1); }
+  }
+  @keyframes haiti-star-bottom {
+    0%, 100% { opacity: 0.15; transform: translateX(-50%) scale(0.85); }
+    50%      { opacity: 1;    transform: translateX(-50%) scale(1.1); }
+  }
+  /* Halo doré doux derrière le drapeau d'Haïti */
+  .match-card.match-haiti {
+    border: 1px solid rgba(232,185,35,0.45);
+  }
 </style>
+
 </head>
 <body style="overflow-x:hidden;">
+
 <!-- ─── POPUP IDENTITÉ ─── -->
 <div id="identityOverlay" style="display:none;">
-  <div class="identity-box">
-    <div class="identity-title">🇭🇹 Bienvenue !</div>
-    <div class="identity-sub">Rejoins la communauté AYITI nan Mondyal.<br>Choisis ton nom et ton avatar pour participer.</div>
-    <input class="identity-name-input" id="identityName" type="text" placeholder="Ton prénom ou pseudo..." maxlength="20">
-    <div class="identity-avatar-label">Choisis ton avatar</div>
-    <div class="avatar-grid" id="avatarGrid"><button class="avatar-btn" onclick="selectAvatar(this)">⚽</button><button class="avatar-btn" onclick="selectAvatar(this)">🦁</button><button class="avatar-btn" onclick="selectAvatar(this)">🐯</button><button class="avatar-btn" onclick="selectAvatar(this)">🦅</button><button class="avatar-btn" onclick="selectAvatar(this)">🏆</button><button class="avatar-btn" onclick="selectAvatar(this)">🔥</button><button class="avatar-btn" onclick="selectAvatar(this)">💪</button><button class="avatar-btn" onclick="selectAvatar(this)">🌟</button><button class="avatar-btn" onclick="selectAvatar(this)">👑</button><button class="avatar-btn" onclick="selectAvatar(this)">🎯</button><button class="avatar-btn" onclick="selectAvatar(this)">🇭</button><button class="avatar-btn" onclick="selectAvatar(this)">🇹</button><button class="avatar-btn" onclick="selectAvatar(this)">⚡</button></div>
-    <div class="identity-avatar-label" style="margin-top:14px;">⚽ Quelle équipe tu supportes ?</div>
-    <select class="identity-team-select" id="identityTeam">
-      <option value="">-- Choisis ton équipe --</option>
-      <option value="🇭🇹 Haïti">🇭🇹 Haïti</option>
-      <option value="🇧🇷 Brésil">🇧🇷 Brésil</option>
-      <option value="🇫🇷 France">🇫🇷 France</option>
-      <option value="🇦🇷 Argentine">🇦🇷 Argentine</option>
-      <option value="🇵🇹 Portugal">🇵🇹 Portugal</option>
-      <option value="🏴󠁧󠁢󠁥󠁮󠁧󠁿 Angleterre">🏴󠁧󠁢󠁥󠁮󠁧󠁿 Angleterre</option>
-      <option value="🇪🇸 Espagne">🇪🇸 Espagne</option>
-      <option value="🇩🇪 Allemagne">🇩🇪 Allemagne</option>
-      <option value="🇲🇦 Maroc">🇲🇦 Maroc</option>
-      <option value="🇺🇸 États-Unis">🇺🇸 États-Unis</option>
-      <option value="🇲🇽 Mexique">🇲🇽 Mexique</option>
-      <option value="🇨🇦 Canada">🇨🇦 Canada</option>
-      <option value="🇸🇳 Sénégal">🇸🇳 Sénégal</option>
-      <option value="🇨🇴 Colombie">🇨🇴 Colombie</option>
-      <option value="🇯🇵 Japon">🇯🇵 Japon</option>
-      <option value="🇳🇱 Pays-Bas">🇳🇱 Pays-Bas</option>
-      <option value="🇺🇾 Uruguay">🇺🇾 Uruguay</option>
-      <option value="🇨🇮 Côte d'Ivoire">🇨🇮 Côte d'Ivoire</option>
-      <option value="🇩🇿 Algérie">🇩🇿 Algérie</option>
-      <option value="🇳🇬 Nigeria">🇳🇬 Nigeria</option>
-    </select>
-    <button class="identity-join-btn" onclick="joinCommunity()">⚡ Rejoindre !</button>
-    <span class="identity-skip" onclick="skipIdentity()">Continuer sans profil</span>
-  </div>
+  <div class="identity-box">
+    <div class="identity-title">🇭🇹 Bienvenue !</div>
+    <div class="identity-sub">Rejoins la communauté AYITI nan Mondyal.<br>Choisis ton nom et ton avatar pour participer.</div>
+    <input class="identity-name-input" id="identityName" type="text" placeholder="Ton prénom ou pseudo..." maxlength="20">
+    <div class="identity-avatar-label">Choisis ton avatar</div>
+    <div class="avatar-grid" id="avatarGrid"><button class="avatar-btn" onclick="selectAvatar(this)">⚽</button><button class="avatar-btn" onclick="selectAvatar(this)">🦁</button><button class="avatar-btn" onclick="selectAvatar(this)">🐯</button><button class="avatar-btn" onclick="selectAvatar(this)">🦅</button><button class="avatar-btn" onclick="selectAvatar(this)">🏆</button><button class="avatar-btn" onclick="selectAvatar(this)">🔥</button><button class="avatar-btn" onclick="selectAvatar(this)">💪</button><button class="avatar-btn" onclick="selectAvatar(this)">🌟</button><button class="avatar-btn" onclick="selectAvatar(this)">👑</button><button class="avatar-btn" onclick="selectAvatar(this)">🎯</button><button class="avatar-btn" onclick="selectAvatar(this)">🇭</button><button class="avatar-btn" onclick="selectAvatar(this)">🇹</button><button class="avatar-btn" onclick="selectAvatar(this)">⚡</button></div>
+    <div class="identity-avatar-label" style="margin-top:14px;">⚽ Quelle équipe tu supportes ?</div>
+    <select class="identity-team-select" id="identityTeam">
+      <option value="">-- Choisis ton équipe --</option>
+      <option value="🇭🇹 Haïti">🇭🇹 Haïti</option>
+      <option value="🇧🇷 Brésil">🇧🇷 Brésil</option>
+      <option value="🇫🇷 France">🇫🇷 France</option>
+      <option value="🇦🇷 Argentine">🇦🇷 Argentine</option>
+      <option value="🇵🇹 Portugal">🇵🇹 Portugal</option>
+      <option value="🏴󠁧󠁢󠁥󠁮󠁧󠁿 Angleterre">🏴󠁧󠁢󠁥󠁮󠁧󠁿 Angleterre</option>
+      <option value="🇪🇸 Espagne">🇪🇸 Espagne</option>
+      <option value="🇩🇪 Allemagne">🇩🇪 Allemagne</option>
+      <option value="🇲🇦 Maroc">🇲🇦 Maroc</option>
+      <option value="🇺🇸 États-Unis">🇺🇸 États-Unis</option>
+      <option value="🇲🇽 Mexique">🇲🇽 Mexique</option>
+      <option value="🇨🇦 Canada">🇨🇦 Canada</option>
+      <option value="🇸🇳 Sénégal">🇸🇳 Sénégal</option>
+      <option value="🇨🇴 Colombie">🇨🇴 Colombie</option>
+      <option value="🇯🇵 Japon">🇯🇵 Japon</option>
+      <option value="🇳🇱 Pays-Bas">🇳🇱 Pays-Bas</option>
+      <option value="🇺🇾 Uruguay">🇺🇾 Uruguay</option>
+      <option value="🇨🇮 Côte d'Ivoire">🇨🇮 Côte d'Ivoire</option>
+      <option value="🇩🇿 Algérie">🇩🇿 Algérie</option>
+      <option value="🇳🇬 Nigeria">🇳🇬 Nigeria</option>
+    </select>
+    <button class="identity-join-btn" onclick="joinCommunity()">⚡ Rejoindre !</button>
+    <span class="identity-skip" onclick="skipIdentity()">Continuer sans profil</span>
+  </div>
 </div>
+
 <!-- ─── SPLASH SCREEN ─── -->
 <div id="splashScreen">
-  <div class="splash-year">2026</div>
-  <img class="splash-logo" src="img_extracted_00.jpg" alt="ELMECO">
-  <div class="splash-flag" id="splashFlag">🇭🇹</div>
-  <div class="splash-title" id="splashTitle">AYITI <span>nan</span> Mondyal</div>
-  <div class="splash-subtitle">Bouyon Boul 2026</div>
-  <div class="splash-bar-wrap"><div class="splash-bar"></div></div>
-  <div class="splash-loading">Chargement…</div>
-  <div class="splash-elmeco-wrap">
-    <div class="splash-elmeco-label">Une courtoisie de</div>
-    <div class="splash-elmeco-box">
-      <span class="splash-bolt">⚡</span>
-      <span class="splash-elmeco-name">ELMECO</span>
-      <span class="splash-bolt">⚡</span>
-      <span class="splash-elmeco-tag"><span class="elmeco-icon-bulb bulb-left">💡</span> Votre solution en électricité depuis 1980 <span class="elmeco-icon-bulb bulb-right">💡</span></span>
-    </div>
-  </div>
+  <div class="splash-year">2026</div>
+  <img class="splash-logo" src="img_extracted_00.jpg" alt="ELMECO">
+  <div class="splash-flag" id="splashFlag">🇭🇹</div>
+  <div class="splash-title" id="splashTitle">AYITI <span>nan</span> Mondyal</div>
+  <div class="splash-subtitle">Bouyon Boul 2026</div>
+  <div class="splash-bar-wrap"><div class="splash-bar"></div></div>
+  <div class="splash-loading">Chargement…</div>
+  <div class="splash-elmeco-wrap">
+    <div class="splash-elmeco-label">Une courtoisie de</div>
+    <div class="splash-elmeco-box">
+      <span class="splash-bolt">⚡</span>
+      <span class="splash-elmeco-name">ELMECO</span>
+      <span class="splash-bolt">⚡</span>
+      <span class="splash-elmeco-tag"><span class="elmeco-icon-bulb bulb-left">💡</span> Votre solution en électricité depuis 1980 <span class="elmeco-icon-bulb bulb-right">💡</span></span>
+    </div>
+  </div>
 </div>
+
 <!-- ─── BANNIÈRE SAFARI iOS ─── -->
 <div id="safariPrompt">
-  <span>🍎 Pour une meilleure expérience —</span>
-  <span>Ouvre ce lien dans <strong>Safari</strong></span>
-  <button class="safari-close" onclick="document.getElementById('safariPrompt').classList.remove('visible'); localStorage.setItem('_safariDismissed','1');">✕</button>
+  <span>🍎 Pour une meilleure expérience —</span>
+  <span>Ouvre ce lien dans <strong>Safari</strong></span>
+  <button class="safari-close" onclick="document.getElementById('safariPrompt').classList.remove('visible'); localStorage.setItem('_safariDismissed','1');">✕</button>
 </div>
+
 <!-- ─── BANDEAU THÈME HAÏTI ─── -->
 <div id="haitiBanner" onclick="handleBannerClick(event)">
-  <span class="hb-flag">🇭🇹</span>
-  <span>THÈME HAÏTI ACTIVÉ — AYITI NAN MONDYAL 2026</span>
-  <span class="hb-flag">🇭🇹</span>
-  <span class="hb-close" title="Désactiver">✕</span>
+  <span class="hb-flag">🇭🇹</span>
+  <span>THÈME HAÏTI ACTIVÉ — AYITI NAN MONDYAL 2026</span>
+  <span class="hb-flag">🇭🇹</span>
+  <span class="hb-close" title="Désactiver">✕</span>
 </div>
+
 <header>
-  <div class="header-inner" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;gap:8px;">
-    <!-- GAUCHE : Menu -->
-    <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
-      <button class="btn-menu" onclick="openSidebar()">☰ Menu</button>
-      <button class="btn-haiti-theme" id="btnInstall" onclick="installApp()" title="Installer l'application" style="display:none;font-size:18px;padding:7px 10px;">⬇️</button>
-    </div>
-    <!-- CENTRE : Logo -->
-    <div class="logo" style="flex:1;justify-content:center;text-align:center;">
-      <div class="logo-icon" id="secretAdminTrigger">⚽</div>
-      <div>
-        <div class="logo-text">AYITI nan Mondyal</div>
-        <div class="logo-sub">11 Juin — 19 Juillet · USA · Canada · Mexique</div>
-      </div>
-    </div>
-    <!-- DROITE : Réglages -->
-    <button onclick="openSettingsPanel()" style="flex-shrink:0;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:20px;padding:7px 10px;cursor:pointer;transition:all 0.2s;" title="Réglages">⚙️</button>
-  </div>
-  <!-- Inputs cachés pour la compatibilité JS -->
-  <input type="hidden" id="searchInput">
-  <input type="color" id="accentPicker" value="#e8b923" oninput="setAccent(this.value)" style="display:none;">
-  <input type="color" id="accentPicker2" value="#ff6b35" oninput="setAccent2(this.value)" style="display:none;">
+  <div class="header-inner" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;gap:8px;">
+
+    <!-- GAUCHE : Menu -->
+    <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
+      <button class="btn-menu" onclick="openSidebar()">☰ Menu</button>
+      <button class="btn-haiti-theme" id="btnInstall" onclick="installApp()" title="Installer l'application" style="display:none;font-size:18px;padding:7px 10px;">⬇️</button>
+    </div>
+
+    <!-- CENTRE : Logo -->
+    <div class="logo" style="flex:1;justify-content:center;text-align:center;">
+      <div class="logo-icon" id="secretAdminTrigger">⚽</div>
+      <div>
+        <div class="logo-text">AYITI nan Mondyal</div>
+        <div class="logo-sub">11 Juin — 19 Juillet · USA · Canada · Mexique</div>
+      </div>
+    </div>
+
+    <!-- DROITE : Réglages -->
+    <button onclick="openSettingsPanel()" style="flex-shrink:0;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:20px;padding:7px 10px;cursor:pointer;transition:all 0.2s;" title="Réglages">⚙️</button>
+  </div>
+
+  <!-- Inputs cachés pour la compatibilité JS -->
+  <input type="hidden" id="searchInput">
+  <input type="color" id="accentPicker" value="#e8b923" oninput="setAccent(this.value)" style="display:none;">
+  <input type="color" id="accentPicker2" value="#ff6b35" oninput="setAccent2(this.value)" style="display:none;">
 </header>
+
 <!-- ─── PANNEAU RÉGLAGES ─── -->
 <div id="settingsPanel" style="display:none;position:fixed;top:0;right:0;bottom:0;width:280px;max-width:90vw;z-index:9995;background:var(--surface);border-left:1px solid var(--border);box-shadow:-4px 0 20px rgba(0,0,0,0.4);overflow-y:auto;padding:20px;">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-    <div style="font-family:var(--font-display);font-size:20px;letter-spacing:2px;color:var(--accent);">RÉGLAGES</div>
-    <button onclick="closeSettingsPanel()" style="background:none;border:none;color:var(--text2);font-size:20px;cursor:pointer;">✕</button>
-  </div>
-  <!-- Profil -->
-  <div style="margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border);">
-    <div style="font-family:var(--font-ui);font-size:10px;color:var(--text2);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;">👤 Mon Profil</div>
-    <div class="user-badge" id="userBadge" onclick="closeSettingsPanel();openProfileEditor();" style="cursor:pointer;width:100%;border-radius:10px;padding:8px 12px;justify-content:flex-start;">
-      <span class="user-badge-avatar" id="userBadgeAvatar" style="font-size:22px;">⚽</span>
-      <span id="userBadgeName" style="font-size:13px;">...</span>
-    </div>
-  </div>
-  <!-- Thèmes -->
-  <div style="margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border);">
-    <div style="font-family:var(--font-ui);font-size:10px;color:var(--text2);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;">🎨 Thèmes</div>
-    <div style="display:flex;flex-direction:column;gap:8px;">
-      <button class="btn-theme" id="themeBtn" onclick="toggleTheme()" style="width:100%;justify-content:center;">
-        <span id="themeIcon">☀️</span><span id="themeLabel">Clair</span>
-      </button>
-      <button class="btn-haiti-theme" onclick="toggleHaitiTheme();closeSettingsPanel();" id="btnHaitiTheme" style="width:100%;justify-content:center;">🇭🇹 Thème Haïti</button>
-      <button class="btn-elmeco-theme" onclick="toggleElmecoTheme();closeSettingsPanel();" id="btnElmecoTheme" style="width:100%;justify-content:center;">⚡ Thème ELMECO</button>
-    </div>
-  </div>
-  <!-- Couleurs -->
-  <div style="margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border);">
-    <div style="font-family:var(--font-ui);font-size:10px;color:var(--text2);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;">🎨 Couleurs</div>
-    <div style="display:flex;gap:12px;align-items:center;">
-      <label style="font-family:var(--font-ui);font-size:11px;color:var(--text2);">Accent <input type="color" value="#e8b923" oninput="setAccent(this.value);document.getElementById('accentPicker').value=this.value" style="margin-left:6px;"></label>
-      <label style="font-family:var(--font-ui);font-size:11px;color:var(--text2);">2e <input type="color" value="#ff6b35" oninput="setAccent2(this.value);document.getElementById('accentPicker2').value=this.value" style="margin-left:6px;"></label>
-    </div>
-  </div>
-  <!-- Police -->
-  <div style="margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border);">
-    <div style="font-family:var(--font-ui);font-size:10px;color:var(--text2);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;">✏️ Police</div>
-    <select onchange="setFont(this.value)" style="width:100%;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px;font-family:var(--font-ui);font-size:12px;">
-      <option value="'Bebas Neue', sans-serif">Bebas Neue</option>
-      <option value="'Oswald', sans-serif" selected>Oswald</option>
-      <option value="'Rajdhani', sans-serif">Rajdhani</option>
-      <option value="'Roboto Condensed', sans-serif">Roboto Condensed</option>
-      <option value="'Playfair Display', serif">Playfair Display</option>
-      <option value="'Space Grotesk', sans-serif">Space Grotesk</option>
-    </select>
-  </div>
-  <!-- Actions -->
-  <div style="display:flex;flex-direction:column;gap:8px;">
-    <button id="btnInstall" onclick="installApp();closeSettingsPanel();" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px;font-family:var(--font-ui);font-size:12px;cursor:pointer;width:100%;">⬇️ Installer l'application</button>
-    <button onclick="closeSettingsPanel();openAdmin();" style="display:none;background:none;border:1px solid rgba(231,76,60,0.4);border-radius:8px;color:#e74c3c;padding:10px;font-family:var(--font-ui);font-size:12px;cursor:pointer;width:100%;">🔐 Modération Admin</button>
-  </div>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+    <div style="font-family:var(--font-display);font-size:20px;letter-spacing:2px;color:var(--accent);">RÉGLAGES</div>
+    <button onclick="closeSettingsPanel()" style="background:none;border:none;color:var(--text2);font-size:20px;cursor:pointer;">✕</button>
+  </div>
+
+  <!-- Profil -->
+  <div style="margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border);">
+    <div style="font-family:var(--font-ui);font-size:10px;color:var(--text2);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;">👤 Mon Profil</div>
+    <div class="user-badge" id="userBadge" onclick="closeSettingsPanel();openProfileEditor();" style="cursor:pointer;width:100%;border-radius:10px;padding:8px 12px;justify-content:flex-start;">
+      <span class="user-badge-avatar" id="userBadgeAvatar" style="font-size:22px;">⚽</span>
+      <span id="userBadgeName" style="font-size:13px;">...</span>
+    </div>
+  </div>
+
+  <!-- Thèmes -->
+  <div style="margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border);">
+    <div style="font-family:var(--font-ui);font-size:10px;color:var(--text2);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;">🎨 Thèmes</div>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <button class="btn-theme" id="themeBtn" onclick="toggleTheme()" style="width:100%;justify-content:center;">
+        <span id="themeIcon">☀️</span><span id="themeLabel">Clair</span>
+      </button>
+      <button class="btn-haiti-theme" onclick="toggleHaitiTheme();closeSettingsPanel();" id="btnHaitiTheme" style="width:100%;justify-content:center;">🇭🇹 Thème Haïti</button>
+      <button class="btn-elmeco-theme" onclick="toggleElmecoTheme();closeSettingsPanel();" id="btnElmecoTheme" style="width:100%;justify-content:center;">⚡ Thème ELMECO</button>
+    </div>
+  </div>
+
+  <!-- Couleurs -->
+  <div style="margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border);">
+    <div style="font-family:var(--font-ui);font-size:10px;color:var(--text2);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;">🎨 Couleurs</div>
+    <div style="display:flex;gap:12px;align-items:center;">
+      <label style="font-family:var(--font-ui);font-size:11px;color:var(--text2);">Accent <input type="color" value="#e8b923" oninput="setAccent(this.value);document.getElementById('accentPicker').value=this.value" style="margin-left:6px;"></label>
+      <label style="font-family:var(--font-ui);font-size:11px;color:var(--text2);">2e <input type="color" value="#ff6b35" oninput="setAccent2(this.value);document.getElementById('accentPicker2').value=this.value" style="margin-left:6px;"></label>
+    </div>
+  </div>
+
+  <!-- Police -->
+  <div style="margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border);">
+    <div style="font-family:var(--font-ui);font-size:10px;color:var(--text2);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;">✏️ Police</div>
+    <select onchange="setFont(this.value)" style="width:100%;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px;font-family:var(--font-ui);font-size:12px;">
+      <option value="'Bebas Neue', sans-serif">Bebas Neue</option>
+      <option value="'Oswald', sans-serif" selected>Oswald</option>
+      <option value="'Rajdhani', sans-serif">Rajdhani</option>
+      <option value="'Roboto Condensed', sans-serif">Roboto Condensed</option>
+      <option value="'Playfair Display', serif">Playfair Display</option>
+      <option value="'Space Grotesk', sans-serif">Space Grotesk</option>
+    </select>
+  </div>
+
+  <!-- Actions -->
+  <div style="display:flex;flex-direction:column;gap:8px;">
+    <button id="btnInstall" onclick="installApp();closeSettingsPanel();" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px;font-family:var(--font-ui);font-size:12px;cursor:pointer;width:100%;">⬇️ Installer l'application</button>
+    <button onclick="closeSettingsPanel();openAdmin();" style="display:none;background:none;border:1px solid rgba(231,76,60,0.4);border-radius:8px;color:#e74c3c;padding:10px;font-family:var(--font-ui);font-size:12px;cursor:pointer;width:100%;">🔐 Modération Admin</button>
+  </div>
 </div>
 <div id="settingsOverlay" onclick="closeSettingsPanel()" style="display:none;position:fixed;inset:0;z-index:9994;background:rgba(0,0,0,0.4);"></div>
+
 <!-- ─── SIDEBAR ─── -->
 <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
 <div class="sidebar" id="sidebar">
-  <div class="sidebar-header">
-    <div class="sidebar-title" id="sidebarTitle">MENU</div>
-    <button class="sidebar-close" onclick="closeSidebar()">✕</button>
-  </div>
-  <!-- Bouton retour section -->
-  <div id="sidebarBackBtn" onclick="backToSidebarMenu()" style="display:none;align-items:center;gap:10px;padding:12px 20px;cursor:pointer;border-bottom:1px solid var(--border);color:var(--accent);font-family:var(--font-ui);font-size:13px;font-weight:700;">
-    <span style="font-size:20px;">☰</span>
-    <span id="sidebarBackLabel">Menu</span>
-  </div>
-  <div class="sidebar-nav">
-    <div class="sidebar-nav-item active" onclick="switchSidebarSection('accueil', this)">
-      <span class="sidebar-nav-icon">🏠</span> Accueil
-    </div>
-    <div class="sidebar-nav-item" onclick="switchSidebarSection('equipes', this)">
-      <span class="sidebar-nav-icon">🌍</span> Informations sur les équipes
-    </div>
-    <div class="sidebar-nav-item" onclick="switchSidebarSection('palmares', this)">
-      <span class="sidebar-nav-icon">🏆</span> Palmarès
-    </div>
-    <div class="sidebar-nav-item" onclick="switchSidebarSection('legendes', this)">
-      <span class="sidebar-nav-icon">⭐</span> Légendes
-    </div>
-    <div class="sidebar-nav-item sidebar-extra" id="sidebarInstallBtn2" onclick="installApp();" style="display:none;">
-      <span class="sidebar-nav-icon">⬇️</span> Télécharger l'application
-    </div>
-    <div class="sidebar-nav-item" id="sidebarInstallBtn" onclick="closeSidebar(); installApp();" style="display:none;">
-      <span class="sidebar-nav-icon">📲</span> Installer l'application
-    </div>
-    <div class="sidebar-nav-item sidebar-extra" onclick="closeSidebar(); openProfileEditor();">
-      <span class="sidebar-nav-icon">👤</span> Mon profil & Points
-    </div>
-    <div class="sidebar-nav-item sidebar-extra" onclick="closeSidebar(); openAdmin();" style="display:none;color:#e74c3c; border-left-color:#e74c3c;">
-      <span class="sidebar-nav-icon">🔐</span> Modération Admin
-    </div>
-  </div>
-  <div class="sidebar-content">
-    <!-- ACCUEIL -->
-    <div class="sidebar-section active" id="section-accueil">
-      <div style="padding:20px 16px;">
-        <div style="font-family:var(--font-display);font-size:28px;color:var(--accent);letter-spacing:2px;margin-bottom:6px;">AYITI nan Mondyal</div>
-        <div style="font-family:var(--font-ui);font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:18px;">
-          Ton calendrier complet du Bouyon Boul 2026. Suis chaque match, entre les scores, marque tes favoris.
-        </div>
-        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px;">
-          <div style="font-family:var(--font-ui);font-size:10px;color:var(--text2);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;">Haïti dans ce Mondial</div>
-          <div style="font-family:var(--font-body);font-size:13px;color:var(--text);line-height:1.6;">
-            🇭🇹 Haïti est dans le <strong style="color:var(--accent)">Groupe C</strong> avec le Brésil 🇧🇷, le Maroc 🇲🇦 et l'Écosse 🏴󠁧󠁢󠁳󠁣󠁴󠁿.<br><br>
-            C'est la <strong style="color:var(--accent)">2e participation</strong> d'Haïti en Coupe du Monde — après 1974 en Allemagne de l'Ouest.
-          </div>
-        </div>
-        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;">
-          <div style="font-family:var(--font-ui);font-size:10px;color:var(--text2);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;">Matchs d'Haïti</div>
-          <div id="haitiMatches"></div>
-        </div>
-      </div>
-    </div>
-    <!-- ÉQUIPES -->
-    <div class="sidebar-section" id="section-equipes">
-      <div class="team-fiche" id="teamFiche">
-        <div class="fiche-back" onclick="showTeamsList()">← Retour aux équipes</div>
-        <div class="fiche-hero">
-          <div class="fiche-flag" id="ficheFlag"></div>
-          <div class="fiche-name" id="ficheName"></div>
-          <div class="fiche-group" id="ficheGroup"></div>
-        </div>
-        <div class="fiche-stats" id="ficheStats"></div>
-        <div class="fiche-titles" id="ficheTitles"></div>
-     <div class="fiche-stars" id="ficheStars"></div>
-        <div class="fiche-buteurs" id="ficheButeurs"></div>
-        <div class="fiche-passeurs" id="fichePasseurs"></div>   
-        <div class="fiche-gardiens" id="ficheGardiens"></div>
-        <div class="fiche-matches">
-          <div class="fiche-section-title">⚽ Matchs du groupe</div>
-          <div id="ficheMatchesList"></div>
-        </div>
-      </div>
-      <div class="teams-list-view" id="teamsListView">
-        <div class="team-search-wrap" style="position:relative;">
-          <span class="team-search-icon">🔍</span>
-          <input class="team-search" id="teamSearchInput" type="text" placeholder="Chercher une équipe…" oninput="filterTeams()">
-        </div>
-        <div class="teams-list" id="teamsList"></div>
-      </div>
-    </div>
-    <!-- PALMARÈS -->
-    <div class="sidebar-section" id="section-palmares">
-      <div class="palmares-list" id="palmaresList"></div>
-    </div>
-    <!-- LÉGENDES -->
-    <div class="sidebar-section" id="section-legendes">
-      <div style="padding:16px;">
-        <!-- Meilleurs Buteurs -->
-        <div class="leg-section-title">⚽ Meilleurs Buteurs (carrière Mondial)</div>
-        <div class="leg-list">
-          <div class="leg-item"><span class="leg-rank gold">1</span><span class="leg-flag">🇩🇪</span><div class="leg-info"><div class="leg-name">Miroslav Klose</div><div class="leg-sub">Allemagne · 16 buts · 24 matchs · 2002–2014</div></div><div class="leg-stat">16</div></div>
-          <div class="leg-item"><span class="leg-rank silver">2</span><span class="leg-flag">🇧🇷</span><div class="leg-info"><div class="leg-name">Ronaldo Nazário</div><div class="leg-sub">Brésil · 15 buts · 19 matchs · 1994–2006</div></div><div class="leg-stat">15</div></div>
-          <div class="leg-item"><span class="leg-rank bronze">3</span><span class="leg-flag">🇩🇪</span><div class="leg-info"><div class="leg-name">Gerd Müller</div><div class="leg-sub">Allemagne · 14 buts · 13 matchs · 1970–1974 · "Der Bomber"</div></div><div class="leg-stat">14</div></div>
-          <div class="leg-item"><span class="leg-rank">4</span><span class="leg-flag">🇫🇷</span><div class="leg-info"><div class="leg-name">Just Fontaine</div><div class="leg-sub">France · 13 buts en 6 matchs · 1958 — record absolu sur une édition</div></div><div class="leg-stat">13</div></div>
-          <div class="leg-item"><span class="leg-rank">4</span><span class="leg-flag">🇦🇷</span><div class="leg-info"><div class="leg-name">Lionel Messi</div><div class="leg-sub">Argentine · 13 buts · 26 matchs · 2006–2022 · Champion 2022</div></div><div class="leg-stat">13</div></div>
-          <div class="leg-item"><span class="leg-rank">6</span><span class="leg-flag">🇧🇷</span><div class="leg-info"><div class="leg-name">Pelé</div><div class="leg-sub">Brésil · 12 buts · 14 matchs · 1958–1970 · Champion ×3</div></div><div class="leg-stat">12</div></div>
-          <div class="leg-item"><span class="leg-rank">7</span><span class="leg-flag">🇦🇷</span><div class="leg-info"><div class="leg-name">Gabriel Batistuta</div><div class="leg-sub">Argentine · 10 buts · 12 matchs · 1994–2002 · "Batigol"</div></div><div class="leg-stat">10</div></div>
-          <div class="leg-item"><span class="leg-rank">8</span><span class="leg-flag">🇫🇷</span><div class="leg-info"><div class="leg-name">Kylian Mbappé</div><div class="leg-sub">France · 9 buts · 14 matchs · 2018–2022 · Finaliste 2022</div></div><div class="leg-stat">9</div></div>
-        </div>
-        <!-- Meilleurs Passeurs -->
-        <div class="leg-section-title" style="margin-top:18px;">🎯 Passeurs & Créateurs (Mondial)</div>
-        <div class="leg-list">
-          <div class="leg-item"><span class="leg-rank gold">1</span><span class="leg-flag">🇦🇷</span><div class="leg-info"><div class="leg-name">Lionel Messi</div><div class="leg-sub">Argentine · 8 passes décisives officielles · 2006–2022</div></div><div class="leg-stat">8</div></div>
-          <div class="leg-item"><span class="leg-rank silver">2</span><span class="leg-flag">🇩🇪</span><div class="leg-info"><div class="leg-name">Thomas Müller</div><div class="leg-sub">Allemagne · 6 passes décisives · 2010–2018 · Roi du "Raumdeuter"</div></div><div class="leg-stat">6</div></div>
-          <div class="leg-item"><span class="leg-rank bronze">3</span><span class="leg-flag">🇦🇷</span><div class="leg-info"><div class="leg-name">Diego Maradona</div><div class="leg-sub">Argentine · Génie créateur · CM 1986 → 5 buts & 5 passes décisives</div></div><div class="leg-stat">—</div></div>
-          <div class="leg-item"><span class="leg-rank">4</span><span class="leg-flag">🇫🇷</span><div class="leg-info"><div class="leg-name">Zinédine Zidane</div><div class="leg-sub">France · Meneur CM 1998 & finaliste 2006 · 2 buts en finale 1998</div></div><div class="leg-stat">—</div></div>
-          <div class="leg-item"><span class="leg-rank">5</span><span class="leg-flag">🇧🇷</span><div class="leg-info"><div class="leg-name">Ronaldinho</div><div class="leg-sub">Brésil · Clé du titre 2002 · Génie technique de la Seleção</div></div><div class="leg-stat">—</div></div>
-        </div>
-        <!-- Meilleurs Gardiens -->
-        <div class="leg-section-title" style="margin-top:18px;">🧤 Meilleurs Gardiens (tous temps)</div>
-        <div class="leg-list">
-          <div class="leg-item"><span class="leg-rank gold">1</span><span class="leg-flag">🇷🇺</span><div class="leg-info"><div class="leg-name">Lev Yachine</div><div class="leg-sub">URSS · Ballon d'Or 1963 · 270+ cages inviolées · "L'Araignée Noire"</div></div></div>
-          <div class="leg-item"><span class="leg-rank silver">2</span><span class="leg-flag">🇮🇹</span><div class="leg-info"><div class="leg-name">Gianluigi Buffon</div><div class="leg-sub">Italie · Champion du Monde 2006 · 176 sélections · Légende Juventus</div></div></div>
-          <div class="leg-item"><span class="leg-rank bronze">3</span><span class="leg-flag">🇩🇪</span><div class="leg-info"><div class="leg-name">Manuel Neuer</div><div class="leg-sub">Allemagne · CM 2014 · Révolutionne le poste de sweeper-keeper</div></div></div>
-          <div class="leg-item"><span class="leg-rank">4</span><span class="leg-flag">🇮🇹</span><div class="leg-info"><div class="leg-name">Dino Zoff</div><div class="leg-sub">Italie · Champion du Monde 1982 à 40 ans · Capitaine légendaire</div></div></div>
-          <div class="leg-item"><span class="leg-rank">5</span><span class="leg-flag">🇪🇸</span><div class="leg-info"><div class="leg-name">Iker Casillas</div><div class="leg-sub">Espagne · CM 2010 · 2× Euro · 167 sélections · Capitaine Real Madrid</div></div></div>
-          <div class="leg-item"><span class="leg-rank">6</span><span class="leg-flag">🏴󠁧󠁢󠁥󠁮󠁧󠁿</span><div class="leg-info"><div class="leg-name">Gordon Banks</div><div class="leg-sub">Angleterre · CM 1966 · Auteur du "plus bel arrêt de l'histoire" face à Pelé</div></div></div>
-          <div class="leg-item"><span class="leg-rank">7</span><span class="leg-flag">🇩🇰</span><div class="leg-info"><div class="leg-name">Peter Schmeichel</div><div class="leg-sub">Danemark · 5× Premier League · Ligue des Champions 1999 avec Man Utd</div></div></div>
-        </div>
-        <!-- Meilleurs Entraîneurs -->
-        <div class="leg-section-title" style="margin-top:18px;">🎓 Meilleurs Entraîneurs (Mondial)</div>
-        <div class="leg-list">
-          <div class="leg-item"><span class="leg-rank gold">—</span><span class="leg-flag">🇫🇷</span><div class="leg-info"><div class="leg-name">Didier Deschamps</div><div class="leg-sub">France · Champion 2018 · Finaliste 2022 · Seul joueur-puis-entraîneur champion du monde</div></div></div>
-          <div class="leg-item"><span class="leg-rank gold">—</span><span class="leg-flag">🇮🇹</span><div class="leg-info"><div class="leg-name">Marcello Lippi</div><div class="leg-sub">Italie · Champion du Monde 2006 · Maître tactique de la Nazionale</div></div></div>
-          <div class="leg-item"><span class="leg-rank gold">—</span><span class="leg-flag">🇩🇪</span><div class="leg-info"><div class="leg-name">Helmut Schön</div><div class="leg-sub">Allemagne · Champion 1974 · Finaliste 1966 · 3e place 1970 · Palmarès unique</div></div></div>
-          <div class="leg-item"><span class="leg-rank gold">—</span><span class="leg-flag">🇧🇷</span><div class="leg-info"><div class="leg-name">Mário Zagallo</div><div class="leg-sub">Brésil · Champion 1970 (entraîneur) · Champion 1958 & 1962 (joueur) · 4 finales au total</div></div></div>
-          <div class="leg-item"><span class="leg-rank gold">—</span><span class="leg-flag">🇦🇷</span><div class="leg-info"><div class="leg-name">Carlos Bilardo</div><div class="leg-sub">Argentine · Champion 1986 · Finaliste 1990 · Architecte du titre avec Maradona</div></div></div>
-          <div class="leg-item"><span class="leg-rank gold">—</span><span class="leg-flag">🇩🇪</span><div class="leg-info"><div class="leg-name">Joachim Löw</div><div class="leg-sub">Allemagne · Champion du Monde 2014 · 15 ans à la tête de la Mannschaft (2006–2021)</div></div></div>
-          <div class="leg-item"><span class="leg-rank gold">—</span><span class="leg-flag">🇮🇹</span><div class="leg-info"><div class="leg-name">Vittorio Pozzo</div><div class="leg-sub">Italie · Seul entraîneur à avoir remporté 2 Coupes du Monde (1934 & 1938)</div></div></div>
-        </div>
-      </div>
-    </div>
-    <!-- RÉGLAGES -->
-    <div class="sidebar-section" id="section-reglages">
-      <div class="sidebar-settings">
-        <div class="sidebar-settings-title">Apparence</div>
-        <div class="sidebar-setting-row">
-          <span class="sidebar-setting-label">Thème</span>
-          <button class="btn-theme" id="themeBtn2" onclick="toggleTheme()">
-            <span id="themeIcon2">☀️</span>
-            <span id="themeLabel2">Clair</span>
-          </button>
-        </div>
-        <div class="sidebar-setting-row">
-          <span class="sidebar-setting-label">Police</span>
-          <select id="fontSelectSidebar" onchange="setFont(this.value)">
-            <option value="'Bebas Neue', sans-serif">Bebas Neue</option>
-            <option value="'Oswald', sans-serif" selected>Oswald</option>
-            <option value="'Rajdhani', sans-serif">Rajdhani</option>
-            <option value="'Roboto Condensed', sans-serif">Roboto Condensed</option>
-            <option value="'Playfair Display', serif">Playfair Display</option>
-            <option value="'Space Grotesk', sans-serif">Space Grotesk</option>
-          </select>
-        </div>
-        <div class="sidebar-setting-row">
-          <span class="sidebar-setting-label">Couleur accent</span>
-          <input type="color" id="accentPickerSidebar" value="#e8b923" oninput="setAccent(this.value)">
-        </div>
-        <div class="sidebar-setting-row">
-          <span class="sidebar-setting-label">Couleur secondaire</span>
-          <input type="color" id="accentPicker2Sidebar" value="#ff6b35" oninput="setAccent2(this.value)">
-        </div>
-      </div>
-    </div>
-  </div>
+  <div class="sidebar-header">
+    <div class="sidebar-title" id="sidebarTitle">MENU</div>
+    <button class="sidebar-close" onclick="closeSidebar()">✕</button>
+  </div>
+  <!-- Bouton retour section -->
+  <div id="sidebarBackBtn" onclick="backToSidebarMenu()" style="display:none;align-items:center;gap:10px;padding:12px 20px;cursor:pointer;border-bottom:1px solid var(--border);color:var(--accent);font-family:var(--font-ui);font-size:13px;font-weight:700;">
+    <span style="font-size:20px;">☰</span>
+    <span id="sidebarBackLabel">Menu</span>
+  </div>
+
+  <div class="sidebar-nav">
+    <div class="sidebar-nav-item active" onclick="switchSidebarSection('accueil', this)">
+      <span class="sidebar-nav-icon">🏠</span> Accueil
+    </div>
+    <div class="sidebar-nav-item" onclick="switchSidebarSection('equipes', this)">
+      <span class="sidebar-nav-icon">🌍</span> Informations sur les équipes
+    </div>
+    <div class="sidebar-nav-item" onclick="switchSidebarSection('palmares', this)">
+      <span class="sidebar-nav-icon">🏆</span> Palmarès
+    </div>
+    <div class="sidebar-nav-item" onclick="switchSidebarSection('legendes', this)">
+      <span class="sidebar-nav-icon">⭐</span> Légendes
+    </div>
+    <div class="sidebar-nav-item sidebar-extra" id="sidebarInstallBtn2" onclick="installApp();" style="display:none;">
+      <span class="sidebar-nav-icon">⬇️</span> Télécharger l'application
+    </div>
+    <div class="sidebar-nav-item" id="sidebarInstallBtn" onclick="closeSidebar(); installApp();" style="display:none;">
+      <span class="sidebar-nav-icon">📲</span> Installer l'application
+    </div>
+    <div class="sidebar-nav-item sidebar-extra" onclick="closeSidebar(); openProfileEditor();">
+      <span class="sidebar-nav-icon">👤</span> Mon profil & Points
+    </div>
+    <div class="sidebar-nav-item sidebar-extra" onclick="closeSidebar(); openAdmin();" style="display:none;color:#e74c3c; border-left-color:#e74c3c;">
+      <span class="sidebar-nav-icon">🔐</span> Modération Admin
+    </div>
+  </div>
+  <div class="sidebar-content">
+
+    <!-- ACCUEIL -->
+    <div class="sidebar-section active" id="section-accueil">
+      <div style="padding:20px 16px;">
+        <div style="font-family:var(--font-display);font-size:28px;color:var(--accent);letter-spacing:2px;margin-bottom:6px;">AYITI nan Mondyal</div>
+        <div style="font-family:var(--font-ui);font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:18px;">
+          Ton calendrier complet du Bouyon Boul 2026. Suis chaque match, entre les scores, marque tes favoris.
+        </div>
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px;">
+          <div style="font-family:var(--font-ui);font-size:10px;color:var(--text2);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;">Haïti dans ce Mondial</div>
+          <div style="font-family:var(--font-body);font-size:13px;color:var(--text);line-height:1.6;">
+            🇭🇹 Haïti est dans le <strong style="color:var(--accent)">Groupe C</strong> avec le Brésil 🇧🇷, le Maroc 🇲🇦 et l'Écosse 🏴󠁧󠁢󠁳󠁣󠁴󠁿.<br><br>
+            C'est la <strong style="color:var(--accent)">2e participation</strong> d'Haïti en Coupe du Monde — après 1974 en Allemagne de l'Ouest.
+          </div>
+        </div>
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;">
+          <div style="font-family:var(--font-ui);font-size:10px;color:var(--text2);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;">Matchs d'Haïti</div>
+          <div id="haitiMatches"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ÉQUIPES -->
+    <div class="sidebar-section" id="section-equipes">
+      <div class="team-fiche" id="teamFiche">
+        <div class="fiche-back" onclick="showTeamsList()">← Retour aux équipes</div>
+        <div class="fiche-hero">
+          <div class="fiche-flag" id="ficheFlag"></div>
+          <div class="fiche-name" id="ficheName"></div>
+          <div class="fiche-group" id="ficheGroup"></div>
+        </div>
+        <div class="fiche-stats" id="ficheStats"></div>
+        <div class="fiche-titles" id="ficheTitles"></div>
+     <div class="fiche-stars" id="ficheStars"></div>
+        <div class="fiche-buteurs" id="ficheButeurs"></div>
+        <div class="fiche-passeurs" id="fichePasseurs"></div>   
+        <div class="fiche-gardiens" id="ficheGardiens"></div>
+        <div class="fiche-matches">
+          <div class="fiche-section-title">⚽ Matchs du groupe</div>
+          <div id="ficheMatchesList"></div>
+        </div>
+      </div>
+      <div class="teams-list-view" id="teamsListView">
+        <div class="team-search-wrap" style="position:relative;">
+          <span class="team-search-icon">🔍</span>
+          <input class="team-search" id="teamSearchInput" type="text" placeholder="Chercher une équipe…" oninput="filterTeams()">
+        </div>
+        <div class="teams-list" id="teamsList"></div>
+      </div>
+    </div>
+
+    <!-- PALMARÈS -->
+    <div class="sidebar-section" id="section-palmares">
+      <div class="palmares-list" id="palmaresList"></div>
+    </div>
+
+    <!-- LÉGENDES -->
+    <div class="sidebar-section" id="section-legendes">
+      <div style="padding:16px;">
+
+        <!-- Meilleurs Buteurs -->
+        <div class="leg-section-title">⚽ Meilleurs Buteurs (carrière Mondial)</div>
+        <div class="leg-list">
+          <div class="leg-item"><span class="leg-rank gold">1</span><span class="leg-flag">🇩🇪</span><div class="leg-info"><div class="leg-name">Miroslav Klose</div><div class="leg-sub">Allemagne · 16 buts · 24 matchs · 2002–2014</div></div><div class="leg-stat">16</div></div>
+          <div class="leg-item"><span class="leg-rank silver">2</span><span class="leg-flag">🇧🇷</span><div class="leg-info"><div class="leg-name">Ronaldo Nazário</div><div class="leg-sub">Brésil · 15 buts · 19 matchs · 1994–2006</div></div><div class="leg-stat">15</div></div>
+          <div class="leg-item"><span class="leg-rank bronze">3</span><span class="leg-flag">🇩🇪</span><div class="leg-info"><div class="leg-name">Gerd Müller</div><div class="leg-sub">Allemagne · 14 buts · 13 matchs · 1970–1974 · "Der Bomber"</div></div><div class="leg-stat">14</div></div>
+          <div class="leg-item"><span class="leg-rank">4</span><span class="leg-flag">🇫🇷</span><div class="leg-info"><div class="leg-name">Just Fontaine</div><div class="leg-sub">France · 13 buts en 6 matchs · 1958 — record absolu sur une édition</div></div><div class="leg-stat">13</div></div>
+          <div class="leg-item"><span class="leg-rank">4</span><span class="leg-flag">🇦🇷</span><div class="leg-info"><div class="leg-name">Lionel Messi</div><div class="leg-sub">Argentine · 13 buts · 26 matchs · 2006–2022 · Champion 2022</div></div><div class="leg-stat">13</div></div>
+          <div class="leg-item"><span class="leg-rank">6</span><span class="leg-flag">🇧🇷</span><div class="leg-info"><div class="leg-name">Pelé</div><div class="leg-sub">Brésil · 12 buts · 14 matchs · 1958–1970 · Champion ×3</div></div><div class="leg-stat">12</div></div>
+          <div class="leg-item"><span class="leg-rank">7</span><span class="leg-flag">🇦🇷</span><div class="leg-info"><div class="leg-name">Gabriel Batistuta</div><div class="leg-sub">Argentine · 10 buts · 12 matchs · 1994–2002 · "Batigol"</div></div><div class="leg-stat">10</div></div>
+          <div class="leg-item"><span class="leg-rank">8</span><span class="leg-flag">🇫🇷</span><div class="leg-info"><div class="leg-name">Kylian Mbappé</div><div class="leg-sub">France · 9 buts · 14 matchs · 2018–2022 · Finaliste 2022</div></div><div class="leg-stat">9</div></div>
+        </div>
+
+        <!-- Meilleurs Passeurs -->
+        <div class="leg-section-title" style="margin-top:18px;">🎯 Passeurs & Créateurs (Mondial)</div>
+        <div class="leg-list">
+          <div class="leg-item"><span class="leg-rank gold">1</span><span class="leg-flag">🇦🇷</span><div class="leg-info"><div class="leg-name">Lionel Messi</div><div class="leg-sub">Argentine · 8 passes décisives officielles · 2006–2022</div></div><div class="leg-stat">8</div></div>
+          <div class="leg-item"><span class="leg-rank silver">2</span><span class="leg-flag">🇩🇪</span><div class="leg-info"><div class="leg-name">Thomas Müller</div><div class="leg-sub">Allemagne · 6 passes décisives · 2010–2018 · Roi du "Raumdeuter"</div></div><div class="leg-stat">6</div></div>
+          <div class="leg-item"><span class="leg-rank bronze">3</span><span class="leg-flag">🇦🇷</span><div class="leg-info"><div class="leg-name">Diego Maradona</div><div class="leg-sub">Argentine · Génie créateur · CM 1986 → 5 buts & 5 passes décisives</div></div><div class="leg-stat">—</div></div>
+          <div class="leg-item"><span class="leg-rank">4</span><span class="leg-flag">🇫🇷</span><div class="leg-info"><div class="leg-name">Zinédine Zidane</div><div class="leg-sub">France · Meneur CM 1998 & finaliste 2006 · 2 buts en finale 1998</div></div><div class="leg-stat">—</div></div>
+          <div class="leg-item"><span class="leg-rank">5</span><span class="leg-flag">🇧🇷</span><div class="leg-info"><div class="leg-name">Ronaldinho</div><div class="leg-sub">Brésil · Clé du titre 2002 · Génie technique de la Seleção</div></div><div class="leg-stat">—</div></div>
+        </div>
+
+        <!-- Meilleurs Gardiens -->
+        <div class="leg-section-title" style="margin-top:18px;">🧤 Meilleurs Gardiens (tous temps)</div>
+        <div class="leg-list">
+          <div class="leg-item"><span class="leg-rank gold">1</span><span class="leg-flag">🇷🇺</span><div class="leg-info"><div class="leg-name">Lev Yachine</div><div class="leg-sub">URSS · Ballon d'Or 1963 · 270+ cages inviolées · "L'Araignée Noire"</div></div></div>
+          <div class="leg-item"><span class="leg-rank silver">2</span><span class="leg-flag">🇮🇹</span><div class="leg-info"><div class="leg-name">Gianluigi Buffon</div><div class="leg-sub">Italie · Champion du Monde 2006 · 176 sélections · Légende Juventus</div></div></div>
+          <div class="leg-item"><span class="leg-rank bronze">3</span><span class="leg-flag">🇩🇪</span><div class="leg-info"><div class="leg-name">Manuel Neuer</div><div class="leg-sub">Allemagne · CM 2014 · Révolutionne le poste de sweeper-keeper</div></div></div>
+          <div class="leg-item"><span class="leg-rank">4</span><span class="leg-flag">🇮🇹</span><div class="leg-info"><div class="leg-name">Dino Zoff</div><div class="leg-sub">Italie · Champion du Monde 1982 à 40 ans · Capitaine légendaire</div></div></div>
+          <div class="leg-item"><span class="leg-rank">5</span><span class="leg-flag">🇪🇸</span><div class="leg-info"><div class="leg-name">Iker Casillas</div><div class="leg-sub">Espagne · CM 2010 · 2× Euro · 167 sélections · Capitaine Real Madrid</div></div></div>
+          <div class="leg-item"><span class="leg-rank">6</span><span class="leg-flag">🏴󠁧󠁢󠁥󠁮󠁧󠁿</span><div class="leg-info"><div class="leg-name">Gordon Banks</div><div class="leg-sub">Angleterre · CM 1966 · Auteur du "plus bel arrêt de l'histoire" face à Pelé</div></div></div>
+          <div class="leg-item"><span class="leg-rank">7</span><span class="leg-flag">🇩🇰</span><div class="leg-info"><div class="leg-name">Peter Schmeichel</div><div class="leg-sub">Danemark · 5× Premier League · Ligue des Champions 1999 avec Man Utd</div></div></div>
+        </div>
+
+        <!-- Meilleurs Entraîneurs -->
+        <div class="leg-section-title" style="margin-top:18px;">🎓 Meilleurs Entraîneurs (Mondial)</div>
+        <div class="leg-list">
+          <div class="leg-item"><span class="leg-rank gold">—</span><span class="leg-flag">🇫🇷</span><div class="leg-info"><div class="leg-name">Didier Deschamps</div><div class="leg-sub">France · Champion 2018 · Finaliste 2022 · Seul joueur-puis-entraîneur champion du monde</div></div></div>
+          <div class="leg-item"><span class="leg-rank gold">—</span><span class="leg-flag">🇮🇹</span><div class="leg-info"><div class="leg-name">Marcello Lippi</div><div class="leg-sub">Italie · Champion du Monde 2006 · Maître tactique de la Nazionale</div></div></div>
+          <div class="leg-item"><span class="leg-rank gold">—</span><span class="leg-flag">🇩🇪</span><div class="leg-info"><div class="leg-name">Helmut Schön</div><div class="leg-sub">Allemagne · Champion 1974 · Finaliste 1966 · 3e place 1970 · Palmarès unique</div></div></div>
+          <div class="leg-item"><span class="leg-rank gold">—</span><span class="leg-flag">🇧🇷</span><div class="leg-info"><div class="leg-name">Mário Zagallo</div><div class="leg-sub">Brésil · Champion 1970 (entraîneur) · Champion 1958 & 1962 (joueur) · 4 finales au total</div></div></div>
+          <div class="leg-item"><span class="leg-rank gold">—</span><span class="leg-flag">🇦🇷</span><div class="leg-info"><div class="leg-name">Carlos Bilardo</div><div class="leg-sub">Argentine · Champion 1986 · Finaliste 1990 · Architecte du titre avec Maradona</div></div></div>
+          <div class="leg-item"><span class="leg-rank gold">—</span><span class="leg-flag">🇩🇪</span><div class="leg-info"><div class="leg-name">Joachim Löw</div><div class="leg-sub">Allemagne · Champion du Monde 2014 · 15 ans à la tête de la Mannschaft (2006–2021)</div></div></div>
+          <div class="leg-item"><span class="leg-rank gold">—</span><span class="leg-flag">🇮🇹</span><div class="leg-info"><div class="leg-name">Vittorio Pozzo</div><div class="leg-sub">Italie · Seul entraîneur à avoir remporté 2 Coupes du Monde (1934 & 1938)</div></div></div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- RÉGLAGES -->
+    <div class="sidebar-section" id="section-reglages">
+      <div class="sidebar-settings">
+        <div class="sidebar-settings-title">Apparence</div>
+        <div class="sidebar-setting-row">
+          <span class="sidebar-setting-label">Thème</span>
+          <button class="btn-theme" id="themeBtn2" onclick="toggleTheme()">
+            <span id="themeIcon2">☀️</span>
+            <span id="themeLabel2">Clair</span>
+          </button>
+        </div>
+        <div class="sidebar-setting-row">
+          <span class="sidebar-setting-label">Police</span>
+          <select id="fontSelectSidebar" onchange="setFont(this.value)">
+            <option value="'Bebas Neue', sans-serif">Bebas Neue</option>
+            <option value="'Oswald', sans-serif" selected>Oswald</option>
+            <option value="'Rajdhani', sans-serif">Rajdhani</option>
+            <option value="'Roboto Condensed', sans-serif">Roboto Condensed</option>
+            <option value="'Playfair Display', serif">Playfair Display</option>
+            <option value="'Space Grotesk', sans-serif">Space Grotesk</option>
+          </select>
+        </div>
+        <div class="sidebar-setting-row">
+          <span class="sidebar-setting-label">Couleur accent</span>
+          <input type="color" id="accentPickerSidebar" value="#e8b923" oninput="setAccent(this.value)">
+        </div>
+        <div class="sidebar-setting-row">
+          <span class="sidebar-setting-label">Couleur secondaire</span>
+          <input type="color" id="accentPicker2Sidebar" value="#ff6b35" oninput="setAccent2(this.value)">
+        </div>
+      </div>
+    </div>
+
+  </div>
 </div>
+
 <!-- Countdown -->
 <div class="countdown-bar">
-  <div class="countdown-inner">
-    <div class="countdown-label">DÉBUT DU TOURNOI DANS</div>
-    <div class="countdown-units">
-      <div class="cd-unit">
-        <span class="cd-num" id="cd-days">--</span>
-        <span class="cd-lbl">Jours</span>
-      </div>
-      <div class="cd-sep">:</div>
-      <div class="cd-unit">
-        <span class="cd-num" id="cd-hours">--</span>
-        <span class="cd-lbl">Heures</span>
-      </div>
-      <div class="cd-sep">:</div>
-      <div class="cd-unit">
-        <span class="cd-num" id="cd-mins">--</span>
-        <span class="cd-lbl">Minutes</span>
-      </div>
-      <div class="cd-sep">:</div>
-      <div class="cd-unit">
-        <span class="cd-num" id="cd-secs">--</span>
-        <span class="cd-lbl">Secondes</span>
-      </div>
-    </div>
-  </div>
+  <div class="countdown-inner">
+    <div class="countdown-label">DÉBUT DU TOURNOI DANS</div>
+    <div class="countdown-units">
+      <div class="cd-unit">
+        <span class="cd-num" id="cd-days">--</span>
+        <span class="cd-lbl">Jours</span>
+      </div>
+      <div class="cd-sep">:</div>
+      <div class="cd-unit">
+        <span class="cd-num" id="cd-hours">--</span>
+        <span class="cd-lbl">Heures</span>
+      </div>
+      <div class="cd-sep">:</div>
+      <div class="cd-unit">
+        <span class="cd-num" id="cd-mins">--</span>
+        <span class="cd-lbl">Minutes</span>
+      </div>
+      <div class="cd-sep">:</div>
+      <div class="cd-unit">
+        <span class="cd-num" id="cd-secs">--</span>
+        <span class="cd-lbl">Secondes</span>
+      </div>
+    </div>
+  </div>
 </div>
+
 <!-- ─── HERO v7 ─── -->
 <section class="hero" id="hero-cover">
-  <div class="hero-topbar"></div>
-  <div class="hero-grid"></div>
-  <div class="hero-arena">
-    <!-- GAUCHE : Yamal — regarde naturellement vers la droite ✅ -->
-    <div class="hero-side hero-yamal-col" style="grid-column:1;">
-      <img src="img_extracted_01.jpg" alt="Lamine Yamal">
-      <div class="hero-side-flag">🇦🇷</div>
-    </div>
-    <!-- CENTRE HAUT : Haïti -->
-    <div class="hero-haiti">
-      <div style="position:absolute; top:14px; left:50%; transform:translateX(-50%); font-size:26px; z-index:6; filter:drop-shadow(0 2px 8px rgba(0,0,0,0.9));">🇭🇹</div>
-      <img src="img_extracted_02.jpg" alt="Les Grenadiers">
-    </div>
-    <!-- DROITE : Vini — pointe naturellement vers la gauche ✅ -->
-    <div class="hero-side hero-vini-col" style="grid-column:3;">
-      <img src="img_extracted_03.jpg" alt="Vinicius Jr">
-      <div class="hero-side-flag">🇧🇷</div>
-    </div>
-    <!-- CENTRE BAS : AYITI -->
-    <div class="hero-ayiti">
-      <div class="hero-eyebrow">Bouyon Boul 2026</div>
-      <div class="hero-big-title">AYITI</div>
-      <span class="hero-big-sub">nan Mondyal</span>
-      <span class="hero-big-date">11 Juin — 19 Juillet<br>USA · Canada · Mexique</span>
-      <div class="hero-divider"></div>
-    </div>
-  </div>
-  <div class="hero-bottom">
-    <div class="hero-stats">
-      <div class="hero-stat"><div class="hero-stat-num">48</div><div class="hero-stat-lbl">Nations</div></div>
-      <div class="hero-stat"><div class="hero-stat-num">104</div><div class="hero-stat-lbl">Matchs</div></div>
-      <div class="hero-stat"><div class="hero-stat-num">16</div><div class="hero-stat-lbl">Stades</div></div>
-      <div class="hero-stat"><div class="hero-stat-num">11.06</div><div class="hero-stat-lbl">Ouverture</div></div>
-      <div class="hero-stat"><div class="hero-stat-num">19.07</div><div class="hero-stat-lbl">Finale</div></div>
-      <div class="hero-stat"><div class="hero-stat-num">🇺🇸🇨🇦🇲🇽</div><div class="hero-stat-lbl">Pays hôtes</div></div>
-    </div>
-    <div class="hero-cta-row">
-      <button class="hero-btn-primary" onclick="document.getElementById('main-content').scrollIntoView({behavior:'smooth'})">⚽ Voir le Calendrier</button>
-      <button class="hero-btn-ghost" onclick="openSidebar()">☰ Équipes &amp; Infos</button>
-    </div>
-    <!-- Carrousel joueurs -->
-    <div class="players-carousel-wrap">
-      <div class="players-carousel" id="playersCarousel">
-        <div class="players-track" id="playersTrack">
-          <div class="player-slide"><img src="img_extracted_04.jpg" loading="lazy"></div>
-          <div class="player-slide"><img src="img_extracted_05.jpg" loading="lazy"></div>
-          <div class="player-slide"><img src="img_extracted_06.jpg" loading="lazy"></div>
-          <div class="player-slide"><img src="img_extracted_07.jpg" loading="lazy"></div>
-          <div class="player-slide"><img src="img_extracted_08.jpg" loading="lazy"></div>
-          <div class="player-slide"><img src="img_extracted_09.jpg" loading="lazy"></div>
-          <div class="player-slide"><img src="img_extracted_10.jpg" loading="lazy"></div>
-          <div class="player-slide"><img src="img_extracted_11.jpg" loading="lazy"></div>
-          <div class="player-slide"><img src="img_extracted_12.jpg" loading="lazy"></div>
-          <div class="player-slide"><img src="img_extracted_13.jpg" loading="lazy"></div>
-          <div class="player-slide"><img src="img_extracted_14.jpg" loading="lazy"></div>
-          <div class="player-slide"><img src="img_extracted_15.jpg" loading="lazy"></div>
-          <div class="player-slide"><img src="img_extracted_16.jpg" loading="lazy"></div>
-          <div class="player-slide"><img src="img_extracted_17.jpg" loading="lazy"></div>
-          <div class="player-slide"><img src="img_extracted_18.jpg" loading="lazy"></div>
-          <div class="player-slide"><img src="img_extracted_19.jpg" loading="lazy"></div>
-          <div class="player-slide"><img src="img_extracted_20.jpg" loading="lazy"></div>
-          <div class="player-slide"><img src="img_extracted_21.jpg" loading="lazy"></div>
-          <div class="player-slide"><img src="img_extracted_22.jpg" loading="lazy"></div>
-          <div class="player-slide"><img src="img_extracted_23.jpg" loading="lazy"></div>
-          <div class="player-slide"><img src="img_extracted_24.jpg" loading="lazy"></div>
-          <div class="player-slide"><img src="img_extracted_25.jpg" loading="lazy"></div>
-          <div class="player-slide"><img src="img_extracted_26.jpg" loading="lazy"></div>
-          <div class="player-slide"><img src="img_extracted_27.jpg" loading="lazy"></div>
-        </div>
-      </div>
-    </div>
-    <!-- Crédit -->
-    <div style="text-align:center; padding: 6px 0 2px; font-family:'Inter',sans-serif;">
-      <div style="font-size:10px; letter-spacing:1.5px; color:rgba(255,255,255,0.28); text-transform:uppercase; margin-bottom:2px;">Une courtoisie de</div>
-      <div style="display:inline-flex; flex-direction:column; align-items:center; gap:4px; background:rgba(232,160,32,0.08); border:1px solid rgba(232,160,32,0.25); border-radius:8px; padding:6px 16px;">
-        <div style="display:flex; align-items:center; gap:8px;">
-          <span style="font-size:14px;">⚡</span>
-          <span style="font-family:'Bebas Neue',sans-serif; font-size:52px; letter-spacing:6px; color:#e8a020;">ELMECO</span>
-          <span style="font-size:14px;">⚡</span>
-        </div>
-        <div style="display:flex; align-items:center; gap:6px;">
-          <span class="elmeco-icon-bulb bulb-left" style="font-size:14px;">💡</span><span style="font-family:'Inter',sans-serif; font-size:9px; color:rgba(255,255,255,0.45); letter-spacing:0.8px; margin:0 4px;">Votre solution en électricité depuis 1980</span><span class="elmeco-icon-bulb bulb-right" style="font-size:14px;">💡</span>
-        </div>
-      </div>
-    </div>
-    <span class="hero-chevron" onclick="document.getElementById('main-content').scrollIntoView({behavior:'smooth'})">▾</span>
-  </div>
+  <div class="hero-topbar"></div>
+  <div class="hero-grid"></div>
+
+  <div class="hero-arena">
+
+    <!-- GAUCHE : Yamal — regarde naturellement vers la droite ✅ -->
+    <div class="hero-side hero-yamal-col" style="grid-column:1;">
+      <img src="img_extracted_01.jpg" alt="Lamine Yamal">
+      <div class="hero-side-flag">🇦🇷</div>
+    </div>
+
+    <!-- CENTRE HAUT : Haïti -->
+    <div class="hero-haiti">
+      <div style="position:absolute; top:14px; left:50%; transform:translateX(-50%); font-size:26px; z-index:6; filter:drop-shadow(0 2px 8px rgba(0,0,0,0.9));">🇭🇹</div>
+      <img src="img_extracted_02.jpg" alt="Les Grenadiers">
+    </div>
+
+    <!-- DROITE : Vini — pointe naturellement vers la gauche ✅ -->
+    <div class="hero-side hero-vini-col" style="grid-column:3;">
+      <img src="img_extracted_03.jpg" alt="Vinicius Jr">
+      <div class="hero-side-flag">🇧🇷</div>
+    </div>
+
+    <!-- CENTRE BAS : AYITI -->
+    <div class="hero-ayiti">
+      <div class="hero-eyebrow">Bouyon Boul 2026</div>
+      <div class="hero-big-title">AYITI</div>
+      <span class="hero-big-sub">nan Mondyal</span>
+      <span class="hero-big-date">11 Juin — 19 Juillet<br>USA · Canada · Mexique</span>
+      <div class="hero-divider"></div>
+    </div>
+
+  </div>
+
+  <div class="hero-bottom">
+    <div class="hero-stats">
+      <div class="hero-stat"><div class="hero-stat-num">48</div><div class="hero-stat-lbl">Nations</div></div>
+      <div class="hero-stat"><div class="hero-stat-num">104</div><div class="hero-stat-lbl">Matchs</div></div>
+      <div class="hero-stat"><div class="hero-stat-num">16</div><div class="hero-stat-lbl">Stades</div></div>
+      <div class="hero-stat"><div class="hero-stat-num">11.06</div><div class="hero-stat-lbl">Ouverture</div></div>
+      <div class="hero-stat"><div class="hero-stat-num">19.07</div><div class="hero-stat-lbl">Finale</div></div>
+      <div class="hero-stat"><div class="hero-stat-num">🇺🇸🇨🇦🇲🇽</div><div class="hero-stat-lbl">Pays hôtes</div></div>
+    </div>
+    <div class="hero-cta-row">
+      <button class="hero-btn-primary" onclick="document.getElementById('main-content').scrollIntoView({behavior:'smooth'})">⚽ Voir le Calendrier</button>
+      <button class="hero-btn-ghost" onclick="openSidebar()">☰ Équipes &amp; Infos</button>
+    </div>
+    <!-- Carrousel joueurs -->
+    <div class="players-carousel-wrap">
+      <div class="players-carousel" id="playersCarousel">
+        <div class="players-track" id="playersTrack">
+          <div class="player-slide"><img src="img_extracted_04.jpg" loading="lazy"></div>
+          <div class="player-slide"><img src="img_extracted_05.jpg" loading="lazy"></div>
+          <div class="player-slide"><img src="img_extracted_06.jpg" loading="lazy"></div>
+          <div class="player-slide"><img src="img_extracted_07.jpg" loading="lazy"></div>
+          <div class="player-slide"><img src="img_extracted_08.jpg" loading="lazy"></div>
+          <div class="player-slide"><img src="img_extracted_09.jpg" loading="lazy"></div>
+          <div class="player-slide"><img src="img_extracted_10.jpg" loading="lazy"></div>
+          <div class="player-slide"><img src="img_extracted_11.jpg" loading="lazy"></div>
+          <div class="player-slide"><img src="img_extracted_12.jpg" loading="lazy"></div>
+          <div class="player-slide"><img src="img_extracted_13.jpg" loading="lazy"></div>
+          <div class="player-slide"><img src="img_extracted_14.jpg" loading="lazy"></div>
+          <div class="player-slide"><img src="img_extracted_15.jpg" loading="lazy"></div>
+          <div class="player-slide"><img src="img_extracted_16.jpg" loading="lazy"></div>
+          <div class="player-slide"><img src="img_extracted_17.jpg" loading="lazy"></div>
+          <div class="player-slide"><img src="img_extracted_18.jpg" loading="lazy"></div>
+          <div class="player-slide"><img src="img_extracted_19.jpg" loading="lazy"></div>
+          <div class="player-slide"><img src="img_extracted_20.jpg" loading="lazy"></div>
+          <div class="player-slide"><img src="img_extracted_21.jpg" loading="lazy"></div>
+          <div class="player-slide"><img src="img_extracted_22.jpg" loading="lazy"></div>
+          <div class="player-slide"><img src="img_extracted_23.jpg" loading="lazy"></div>
+          <div class="player-slide"><img src="img_extracted_24.jpg" loading="lazy"></div>
+          <div class="player-slide"><img src="img_extracted_25.jpg" loading="lazy"></div>
+          <div class="player-slide"><img src="img_extracted_26.jpg" loading="lazy"></div>
+          <div class="player-slide"><img src="img_extracted_27.jpg" loading="lazy"></div>
+        </div>
+      </div>
+    </div>
+    <!-- Crédit -->
+    <div style="text-align:center; padding: 6px 0 2px; font-family:'Inter',sans-serif;">
+      <div style="font-size:10px; letter-spacing:1.5px; color:rgba(255,255,255,0.28); text-transform:uppercase; margin-bottom:2px;">Une courtoisie de</div>
+      <div style="display:inline-flex; flex-direction:column; align-items:center; gap:4px; background:rgba(232,160,32,0.08); border:1px solid rgba(232,160,32,0.25); border-radius:8px; padding:6px 16px;">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span style="font-size:14px;">⚡</span>
+          <span style="font-family:'Bebas Neue',sans-serif; font-size:52px; letter-spacing:6px; color:#e8a020;">ELMECO</span>
+          <span style="font-size:14px;">⚡</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:6px;">
+          <span class="elmeco-icon-bulb bulb-left" style="font-size:14px;">💡</span><span style="font-family:'Inter',sans-serif; font-size:9px; color:rgba(255,255,255,0.45); letter-spacing:0.8px; margin:0 4px;">Votre solution en électricité depuis 1980</span><span class="elmeco-icon-bulb bulb-right" style="font-size:14px;">💡</span>
+        </div>
+      </div>
+    </div>
+    <span class="hero-chevron" onclick="document.getElementById('main-content').scrollIntoView({behavior:'smooth'})">▾</span>
+  </div>
+
 </section>
+
 <main id="main-content">
-  <!-- Stats -->
-  <div class="stats-bar">
-    <div class="stat-card">
-      <div class="stat-num">48</div>
-      <div class="stat-lbl">Équipes</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-num">104</div>
-      <div class="stat-lbl">Matchs</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-num">16</div>
-      <div class="stat-lbl">Stades</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-num">12</div>
-      <div class="stat-lbl">Groupes</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-num">39</div>
-      <div class="stat-lbl">Jours</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-num">3</div>
-      <div class="stat-lbl">Pays hôtes</div>
-    </div>
-  </div>
-  <!-- Tabs -->
-  <div class="tabs">
-    <button class="tab active" onclick="showView('calendar', this)">📅 Calendrier</button>
-    <button class="tab" onclick="showView('groups', this)">🏆 Groupes</button>
-    <button class="tab" onclick="showView('knockout', this)">⚡ Phase Finale</button>
-    <button class="tab" onclick="showView('ranking', this)">📊 Classement</button>
-    <button class="tab" onclick="showView('scorers', this)">⚽ Buteurs</button>
-    <button class="tab" onclick="showView('bestthirds', this)">🥉 Meilleurs 3es</button>
-    <button class="tab" onclick="showView('pronostics', this)">🎯 Pronostics</button>
-    <button class="tab" onclick="showView('ambassadors', this)">🏆 Ambassadeurs</button>
-    <button class="tab" onclick="showView('starred', this)">⭐ Favoris</button>
-  </div>
-  <!-- CALENDAR VIEW -->
-  <div id="view-calendar">
-    <!-- Filter by group -->
-    <!-- Filtre date + ville -->
-    <div class="filter-extra-bar" id="filterExtraBar">
-      <select id="filterDate" onchange="applyExtraFilters()">
-        <option value="">📅 Toutes les dates</option>
-      </select>
-      <select id="filterCity" onchange="applyExtraFilters()">
-        <option value="">📍 Toutes les villes</option>
-      </select>
-      <select id="filterStade" onchange="applyExtraFilters()">
-        <option value="">🏟️ Tous les stades</option>
-      </select>
-      <button class="filter-reset-btn" onclick="resetExtraFilters()">✕ Réinitialiser</button>
-    </div>
-    <div class="filter-bar" id="filterBar">
-      <button class="filter-btn active" onclick="filterGroup('all', this)">Tous</button>
-      <button class="filter-btn" onclick="filterGroup('A', this)" style="--g:#e74c3c">Groupe A</button>
-      <button class="filter-btn" onclick="filterGroup('B', this)" style="--g:#e67e22">Groupe B</button>
-      <button class="filter-btn" onclick="filterGroup('C', this)" style="--g:#f1c40f">Groupe C</button>
-      <button class="filter-btn" onclick="filterGroup('D', this)" style="--g:#2ecc71">Groupe D</button>
-      <button class="filter-btn" onclick="filterGroup('E', this)" style="--g:#1abc9c">Groupe E</button>
-      <button class="filter-btn" onclick="filterGroup('F', this)" style="--g:#3498db">Groupe F</button>
-      <button class="filter-btn" onclick="filterGroup('G', this)" style="--g:#9b59b6">Groupe G</button>
-      <button class="filter-btn" onclick="filterGroup('H', this)" style="--g:#e91e8c">Groupe H</button>
-      <button class="filter-btn" onclick="filterGroup('I', this)" style="--g:#ff5722">Groupe I</button>
-      <button class="filter-btn" onclick="filterGroup('J', this)" style="--g:#4caf50">Groupe J</button>
-      <button class="filter-btn" onclick="filterGroup('K', this)" style="--g:#00bcd4">Groupe K</button>
-      <button class="filter-btn" onclick="filterGroup('L', this)" style="--g:#ff9800">Groupe L</button>
-    </div>
-    <!-- Legend -->
-    <div class="legend" id="legendBar"></div>
-    <div id="matchesContainer"></div>
-  </div>
-  <!-- GROUPS VIEW -->
-  <div id="view-groups">
-    <div class="groups-grid" id="groupsGrid"></div>
-  </div>
-  <!-- KNOCKOUT VIEW -->
-  <div id="view-knockout">
-    <div class="bracket-wrap">
-      <div style="font-family:var(--font-body);font-size:14px;color:var(--text2);margin-bottom:20px;">
-        La phase à élimination directe débute le <strong style="color:var(--accent)">28 juin 2026</strong> avec les 32es de finale (M73–M88), jusqu'à la Grande Finale le <strong style="color:var(--accent)">19 juillet</strong> au MetLife Stadium, New York.
-      </div>
-      <button onclick="autoFillBracket()" style="margin:10px auto;display:block;padding:10px 20px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer;">⚡ Remplir le bracket automatiquement</button>
-      <div id="bracketContent"></div>
-    </div>
-  </div>
-  <!-- STARRED VIEW -->
-  <div id="view-starred">
-    <div style="font-family:var(--font-ui);font-size:13px;color:var(--text2);margin-bottom:16px;">
-      Marquez des matchs avec ⭐ pour les retrouver ici.
-    </div>
-    <div class="matches-grid" id="starredContainer">
-      <div style="color:var(--text2);font-family:var(--font-ui);font-size:13px;grid-column:1/-1;padding:40px;text-align:center;border:2px dashed var(--border);border-radius:12px;">
-        Aucun match favori pour l'instant.<br>Cliquez sur ⭐ sur un match pour l'ajouter ici.
-      </div>
-    </div>
-  </div>
-  <!-- PRONOSTICS VIEW -->
-  <div id="view-pronostics" style="display:none;">
-    <div style="font-family:var(--font-ui);font-size:13px;color:var(--text2);margin-bottom:16px;">
-      Préds le score avant chaque match. 3 pts pour le bon résultat, 5 pts si le score exact !
-    </div>
-    <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
-      <button onclick="showPronoTab('predictions')" id="prono-tab-pred" class="comment-submit-btn" style="flex:1;min-width:120px;">🎯 Mes Pronostics</button>
-      <button onclick="showPronoTab('ranking')" id="prono-tab-rank" class="filter-reset-btn" style="flex:1;min-width:120px;">🏆 Classement</button>
-    </div>
-    <div id="prono-view-predictions"><div class="prono-grid" id="pronoGrid"></div></div>
-    <div id="prono-view-ranking" style="display:none;">
-      <div class="prono-ranking-wrap" id="pronoRankingContent"></div>
-    </div>
-  </div>
-  <!-- RANKING VIEW -->
-  <div id="view-ranking" style="display:none;">
-    <div class="ranking-wrap">
-      <div style="font-family:var(--font-ui);font-size:13px;color:var(--text2);margin-bottom:20px;">
-        Classement mis à jour en temps réel depuis les scores saisis. Les 2 premiers de chaque groupe (vert) et les 8 meilleurs 3es (jaune) se qualifient.
-      </div>
-      <div id="rankingContent"></div>
-    </div>
-  </div>
-  <!-- SCORERS VIEW -->
-  <div id="view-scorers" style="display:none;">
-    <div class="scorers-wrap">
-      <div style="font-family:var(--font-ui);font-size:13px;color:var(--text2);margin-bottom:20px;">
-        Buteurs enregistrés depuis les scores saisis. Ajoutez les buteurs en cliquant sur un match.
-      </div>
-      <div id="scorersContent"></div>
-    </div>
-  </div>
-  <div id="view-bestthirds" style="display:none;">
-    <div class="ranking-wrap">
-      <div id="bestThirdsContent"></div>
-    </div>
-  </div>
+  <!-- Stats -->
+  <div class="stats-bar">
+    <div class="stat-card">
+      <div class="stat-num">48</div>
+      <div class="stat-lbl">Équipes</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num">104</div>
+      <div class="stat-lbl">Matchs</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num">16</div>
+      <div class="stat-lbl">Stades</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num">12</div>
+      <div class="stat-lbl">Groupes</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num">39</div>
+      <div class="stat-lbl">Jours</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num">3</div>
+      <div class="stat-lbl">Pays hôtes</div>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab active" onclick="showView('calendar', this)">📅 Calendrier</button>
+    <button class="tab" onclick="showView('groups', this)">🏆 Groupes</button>
+    <button class="tab" onclick="showView('knockout', this)">⚡ Phase Finale</button>
+    <button class="tab" onclick="showView('ranking', this)">📊 Classement</button>
+    <button class="tab" onclick="showView('scorers', this)">⚽ Buteurs</button>
+    <button class="tab" onclick="showView('bestthirds', this)">🥉 Meilleurs 3es</button>
+    <button class="tab" onclick="showView('pronostics', this)">🎯 Pronostics</button>
+    <button class="tab" onclick="showView('ambassadors', this)">🏆 Ambassadeurs</button>
+    <button class="tab" onclick="showView('starred', this)">⭐ Favoris</button>
+  </div>
+
+  <!-- CALENDAR VIEW -->
+  <div id="view-calendar">
+    <!-- Filter by group -->
+    <!-- Filtre date + ville -->
+    <div class="filter-extra-bar" id="filterExtraBar">
+      <select id="filterDate" onchange="applyExtraFilters()">
+        <option value="">📅 Toutes les dates</option>
+      </select>
+      <select id="filterCity" onchange="applyExtraFilters()">
+        <option value="">📍 Toutes les villes</option>
+      </select>
+      <select id="filterStade" onchange="applyExtraFilters()">
+        <option value="">🏟️ Tous les stades</option>
+      </select>
+      <button class="filter-reset-btn" onclick="resetExtraFilters()">✕ Réinitialiser</button>
+    </div>
+
+    <div class="filter-bar" id="filterBar">
+      <button class="filter-btn active" onclick="filterGroup('all', this)">Tous</button>
+      <button class="filter-btn" onclick="filterGroup('A', this)" style="--g:#e74c3c">Groupe A</button>
+      <button class="filter-btn" onclick="filterGroup('B', this)" style="--g:#e67e22">Groupe B</button>
+      <button class="filter-btn" onclick="filterGroup('C', this)" style="--g:#f1c40f">Groupe C</button>
+      <button class="filter-btn" onclick="filterGroup('D', this)" style="--g:#2ecc71">Groupe D</button>
+      <button class="filter-btn" onclick="filterGroup('E', this)" style="--g:#1abc9c">Groupe E</button>
+      <button class="filter-btn" onclick="filterGroup('F', this)" style="--g:#3498db">Groupe F</button>
+      <button class="filter-btn" onclick="filterGroup('G', this)" style="--g:#9b59b6">Groupe G</button>
+      <button class="filter-btn" onclick="filterGroup('H', this)" style="--g:#e91e8c">Groupe H</button>
+      <button class="filter-btn" onclick="filterGroup('I', this)" style="--g:#ff5722">Groupe I</button>
+      <button class="filter-btn" onclick="filterGroup('J', this)" style="--g:#4caf50">Groupe J</button>
+      <button class="filter-btn" onclick="filterGroup('K', this)" style="--g:#00bcd4">Groupe K</button>
+      <button class="filter-btn" onclick="filterGroup('L', this)" style="--g:#ff9800">Groupe L</button>
+    </div>
+
+    <!-- Legend -->
+    <div class="legend" id="legendBar"></div>
+
+    <div id="matchesContainer"></div>
+  </div>
+
+  <!-- GROUPS VIEW -->
+  <div id="view-groups">
+    <div class="groups-grid" id="groupsGrid"></div>
+  </div>
+
+  <!-- KNOCKOUT VIEW -->
+  <div id="view-knockout">
+    <div class="bracket-wrap">
+      <div style="font-family:var(--font-body);font-size:14px;color:var(--text2);margin-bottom:20px;">
+        La phase à élimination directe débute le <strong style="color:var(--accent)">28 juin 2026</strong> avec les 32es de finale (M73–M88), jusqu'à la Grande Finale le <strong style="color:var(--accent)">19 juillet</strong> au MetLife Stadium, New York.
+      </div>
+      <button onclick="autoFillBracket()" style="margin:10px auto;display:block;padding:10px 20px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer;">⚡ Remplir le bracket automatiquement</button>
+      <div id="bracketContent"></div>
+    </div>
+  </div>
+
+  <!-- STARRED VIEW -->
+  <div id="view-starred">
+    <div style="font-family:var(--font-ui);font-size:13px;color:var(--text2);margin-bottom:16px;">
+      Marquez des matchs avec ⭐ pour les retrouver ici.
+    </div>
+    <div class="matches-grid" id="starredContainer">
+      <div style="color:var(--text2);font-family:var(--font-ui);font-size:13px;grid-column:1/-1;padding:40px;text-align:center;border:2px dashed var(--border);border-radius:12px;">
+        Aucun match favori pour l'instant.<br>Cliquez sur ⭐ sur un match pour l'ajouter ici.
+      </div>
+    </div>
+  </div>
+
+  <!-- PRONOSTICS VIEW -->
+  <div id="view-pronostics" style="display:none;">
+    <div style="font-family:var(--font-ui);font-size:13px;color:var(--text2);margin-bottom:16px;">
+      Préds le score avant chaque match. 3 pts pour le bon résultat, 5 pts si le score exact !
+    </div>
+    <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
+      <button onclick="showPronoTab('predictions')" id="prono-tab-pred" class="comment-submit-btn" style="flex:1;min-width:120px;">🎯 Mes Pronostics</button>
+      <button onclick="showPronoTab('ranking')" id="prono-tab-rank" class="filter-reset-btn" style="flex:1;min-width:120px;">🏆 Classement</button>
+    </div>
+    <div id="prono-view-predictions"><div class="prono-grid" id="pronoGrid"></div></div>
+    <div id="prono-view-ranking" style="display:none;">
+      <div class="prono-ranking-wrap" id="pronoRankingContent"></div>
+    </div>
+  </div>
+
+  <!-- RANKING VIEW -->
+  <div id="view-ranking" style="display:none;">
+    <div class="ranking-wrap">
+      <div style="font-family:var(--font-ui);font-size:13px;color:var(--text2);margin-bottom:20px;">
+        Classement mis à jour en temps réel depuis les scores saisis. Les 2 premiers de chaque groupe (vert) et les 8 meilleurs 3es (jaune) se qualifient.
+      </div>
+      <div id="rankingContent"></div>
+    </div>
+  </div>
+
+  <!-- SCORERS VIEW -->
+  <div id="view-scorers" style="display:none;">
+    <div class="scorers-wrap">
+      <div style="font-family:var(--font-ui);font-size:13px;color:var(--text2);margin-bottom:20px;">
+        Buteurs enregistrés depuis les scores saisis. Ajoutez les buteurs en cliquant sur un match.
+      </div>
+      <div id="scorersContent"></div>
+    </div>
+  </div>
+
+  <div id="view-bestthirds" style="display:none;">
+    <div class="ranking-wrap">
+      <div id="bestThirdsContent"></div>
+    </div>
+  </div>
+
 </main>
+
 <!-- ─── MODAL SCORE ─── -->
 <div class="modal-overlay" id="modalOverlay" onclick="closeModalOnOverlay(event)">
-  <div class="modal" id="modal">
-    <div class="modal-header">
-      <div class="modal-matchup">
-        <div class="modal-team">
-          <div class="modal-flag" id="mHomeFlag"></div>
-          <div class="modal-name" id="mHomeName"></div>
-        </div>
-        <div class="modal-vs">VS</div>
-        <div class="modal-team">
-          <div class="modal-flag" id="mAwayFlag"></div>
-          <div class="modal-name" id="mAwayName"></div>
-        </div>
-      </div>
-      <div class="modal-meta" id="mMeta"></div>
-    </div>
-    <div class="modal-body">
-      <!-- Score -->
-      <div class="score-inputs">
-        <div class="score-input-wrap">
-          <span class="score-input-label" id="mHomeLabelScore"></span>
-          <input class="score-input" id="mScoreHome" type="number" min="0" max="30" placeholder="0">
-        </div>
-        <div class="score-dash">–</div>
-        <div class="score-input-wrap">
-          <span class="score-input-label" id="mAwayLabelScore"></span>
-          <input class="score-input" id="mScoreAway" type="number" min="0" max="30" placeholder="0">
-        </div>
-      </div>
-      <!-- Scorers -->
-      <div class="scorers-section">
-        <div class="scorers-title">⚽ Buteurs</div>
-        <div id="scorersList"></div>
-        <button class="btn-add-scorer" onclick="addScorerRow()">+ Ajouter un buteur</button>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn-clear" onclick="clearScore()" title="Effacer le score">🗑</button>
-      <button class="btn-cancel" onclick="closeModal()">Annuler</button>
-      <button class="btn-save" onclick="saveScore()">✓ Enregistrer</button>
-    </div>
-  </div>
+  <div class="modal" id="modal">
+    <div class="modal-header">
+      <div class="modal-matchup">
+        <div class="modal-team">
+          <div class="modal-flag" id="mHomeFlag"></div>
+          <div class="modal-name" id="mHomeName"></div>
+        </div>
+        <div class="modal-vs">VS</div>
+        <div class="modal-team">
+          <div class="modal-flag" id="mAwayFlag"></div>
+          <div class="modal-name" id="mAwayName"></div>
+        </div>
+      </div>
+      <div class="modal-meta" id="mMeta"></div>
+    </div>
+    <div class="modal-body">
+      <!-- Score -->
+      <div class="score-inputs">
+        <div class="score-input-wrap">
+          <span class="score-input-label" id="mHomeLabelScore"></span>
+          <input class="score-input" id="mScoreHome" type="number" min="0" max="30" placeholder="0">
+        </div>
+        <div class="score-dash">–</div>
+        <div class="score-input-wrap">
+          <span class="score-input-label" id="mAwayLabelScore"></span>
+          <input class="score-input" id="mScoreAway" type="number" min="0" max="30" placeholder="0">
+        </div>
+      </div>
+
+      <!-- Scorers -->
+      <div class="scorers-section">
+        <div class="scorers-title">⚽ Buteurs</div>
+        <div id="scorersList"></div>
+        <button class="btn-add-scorer" onclick="addScorerRow()">+ Ajouter un buteur</button>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-clear" onclick="clearScore()" title="Effacer le score">🗑</button>
+      <button class="btn-cancel" onclick="closeModal()">Annuler</button>
+      <button class="btn-save" onclick="saveScore()">✓ Enregistrer</button>
+    </div>
+  </div>
 </div>
+
 <script src="data.js"></script>
 <script src="app.js" defer></script>
 <!-- ─── GROUP TEAM MODAL ─── -->
 <div class="modal-overlay" id="groupTeamOverlay" onclick="if(event.target===this)closeGroupTeamModal()">
-  <div class="modal" style="max-width:380px;">
-    <div class="modal-header" style="padding:16px 20px 12px;">
-      <div style="display:flex;align-items:center;gap:14px;">
-        <div id="gtFlag" style="font-size:48px;line-height:1;"></div>
-        <div>
-          <div id="gtName" style="font-family:var(--font-display);font-size:22px;letter-spacing:2px;color:var(--text);text-transform:uppercase;"></div>
-          <div id="gtGroup" style="font-family:var(--font-ui);font-size:11px;letter-spacing:2px;text-transform:uppercase;margin-top:2px;"></div>
-        </div>
-        <button onclick="closeGroupTeamModal()" style="margin-left:auto;background:none;border:none;color:var(--text2);font-size:20px;cursor:pointer;padding:4px;">✕</button>
-      </div>
-    </div>
-    <div class="modal-body" style="padding:0;" id="gtContent"></div>
-  </div>
+  <div class="modal" style="max-width:380px;">
+    <div class="modal-header" style="padding:16px 20px 12px;">
+      <div style="display:flex;align-items:center;gap:14px;">
+        <div id="gtFlag" style="font-size:48px;line-height:1;"></div>
+        <div>
+          <div id="gtName" style="font-family:var(--font-display);font-size:22px;letter-spacing:2px;color:var(--text);text-transform:uppercase;"></div>
+          <div id="gtGroup" style="font-family:var(--font-ui);font-size:11px;letter-spacing:2px;text-transform:uppercase;margin-top:2px;"></div>
+        </div>
+        <button onclick="closeGroupTeamModal()" style="margin-left:auto;background:none;border:none;color:var(--text2);font-size:20px;cursor:pointer;padding:4px;">✕</button>
+      </div>
+    </div>
+    <div class="modal-body" style="padding:0;" id="gtContent"></div>
+  </div>
 </div>
+
 <!-- ─── KO MODAL ─── -->
 <div class="ko-modal-overlay" id="koModalOverlay" onclick="if(event.target===this)closeKOModal()">
-  <div class="ko-modal">
-    <div class="ko-modal-header">
-      <div class="ko-modal-title" id="koModalTitle">Match</div>
-      <button onclick="closeKOModal()" style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--text2);font-size:18px;width:32px;height:32px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text2)'">✕</button>
-    </div>
-    <div class="ko-modal-body">
-      <!-- Équipes -->
-      <div class="ko-field-group" style="margin-bottom:8px;">
-        <div class="ko-field">
-          <label class="ko-label">🏠 Équipe domicile</label>
-          <input class="ko-input" id="koHome" type="text" placeholder="Ex : France, Argentine…">
-        </div>
-        <div class="ko-field">
-          <label class="ko-label">✈️ Équipe extérieure</label>
-          <input class="ko-input" id="koAway" type="text" placeholder="Ex : Brésil, Espagne…">
-        </div>
-      </div>
-      <!-- Score -->
-      <div class="ko-section-sep">
-        <div class="ko-section-lbl">⚽ Score</div>
-        <div class="ko-score-row">
-          <div class="ko-score-wrap">
-            <input class="ko-score-in" id="koScoreH" type="number" min="0" max="30" placeholder="0">
-            <div class="ko-score-lbl" id="koScoreHLbl">DOM.</div>
-          </div>
-          <div class="ko-score-sep">–</div>
-          <div class="ko-score-wrap">
-            <input class="ko-score-in" id="koScoreA" type="number" min="0" max="30" placeholder="0">
-            <div class="ko-score-lbl" id="koScoreALbl">EXT.</div>
-          </div>
-        </div>
-      </div>
-      <!-- Heure & Stade -->
-      <div class="ko-section-sep-lg">
-        <div class="ko-section-lbl" style="margin-bottom:10px;">📍 Infos logistiques</div>
-        <div class="ko-field-group">
-          <div class="ko-field">
-            <label class="ko-label">🕐 Heure (locale)</label>
-            <input class="ko-input" id="koTime" type="text" placeholder="Ex : 20h00">
-          </div>
-          <div class="ko-field">
-            <label class="ko-label">🏟️ Stade</label>
-            <input class="ko-input" id="koStadium" type="text" placeholder="Nom du stade">
-          </div>
-          <div class="ko-field full">
-            <label class="ko-label">📍 Ville</label>
-            <input class="ko-input" id="koCity" type="text" placeholder="Ex : New York, Dallas…">
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="ko-modal-footer">
-      <button class="btn-clear" onclick="clearKOMatch()" title="Effacer ce match">🗑</button>
-      <button class="btn-cancel" onclick="closeKOModal()">Annuler</button>
-      <button class="btn-save" onclick="saveKOMatch()">✓ Enregistrer</button>
-    </div>
-  </div>
+  <div class="ko-modal">
+    <div class="ko-modal-header">
+      <div class="ko-modal-title" id="koModalTitle">Match</div>
+      <button onclick="closeKOModal()" style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--text2);font-size:18px;width:32px;height:32px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text2)'">✕</button>
+    </div>
+    <div class="ko-modal-body">
+      <!-- Équipes -->
+      <div class="ko-field-group" style="margin-bottom:8px;">
+        <div class="ko-field">
+          <label class="ko-label">🏠 Équipe domicile</label>
+          <input class="ko-input" id="koHome" type="text" placeholder="Ex : France, Argentine…">
+        </div>
+        <div class="ko-field">
+          <label class="ko-label">✈️ Équipe extérieure</label>
+          <input class="ko-input" id="koAway" type="text" placeholder="Ex : Brésil, Espagne…">
+        </div>
+      </div>
+      <!-- Score -->
+      <div class="ko-section-sep">
+        <div class="ko-section-lbl">⚽ Score</div>
+        <div class="ko-score-row">
+          <div class="ko-score-wrap">
+            <input class="ko-score-in" id="koScoreH" type="number" min="0" max="30" placeholder="0">
+            <div class="ko-score-lbl" id="koScoreHLbl">DOM.</div>
+          </div>
+          <div class="ko-score-sep">–</div>
+          <div class="ko-score-wrap">
+            <input class="ko-score-in" id="koScoreA" type="number" min="0" max="30" placeholder="0">
+            <div class="ko-score-lbl" id="koScoreALbl">EXT.</div>
+          </div>
+        </div>
+      </div>
+      <!-- Heure & Stade -->
+      <div class="ko-section-sep-lg">
+        <div class="ko-section-lbl" style="margin-bottom:10px;">📍 Infos logistiques</div>
+        <div class="ko-field-group">
+          <div class="ko-field">
+            <label class="ko-label">🕐 Heure (locale)</label>
+            <input class="ko-input" id="koTime" type="text" placeholder="Ex : 20h00">
+          </div>
+          <div class="ko-field">
+            <label class="ko-label">🏟️ Stade</label>
+            <input class="ko-input" id="koStadium" type="text" placeholder="Nom du stade">
+          </div>
+          <div class="ko-field full">
+            <label class="ko-label">📍 Ville</label>
+            <input class="ko-input" id="koCity" type="text" placeholder="Ex : New York, Dallas…">
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="ko-modal-footer">
+      <button class="btn-clear" onclick="clearKOMatch()" title="Effacer ce match">🗑</button>
+      <button class="btn-cancel" onclick="closeKOModal()">Annuler</button>
+      <button class="btn-save" onclick="saveKOMatch()">✓ Enregistrer</button>
+    </div>
+  </div>
 </div>
+
 <!-- ─── PANNEAU ADMIN ─── -->
 <div id="adminPanel">
-  <div class="admin-header">
-    <div class="admin-title">🔐 MODÉRATION</div>
-    <button class="admin-close-btn" onclick="closeAdminPanel()">✕ Fermer</button>
-  </div>
-  <div style="font-family:var(--font-ui);font-size:13px;color:var(--text2);margin-bottom:16px;">
-    Commentaires en attente de validation et approuvés.
-  </div>
-  <div id="adminCommentsList"></div>
+  <div class="admin-header">
+    <div class="admin-title">🔐 MODÉRATION</div>
+    <button class="admin-close-btn" onclick="closeAdminPanel()">✕ Fermer</button>
+  </div>
+  <div style="font-family:var(--font-ui);font-size:13px;color:var(--text2);margin-bottom:16px;">
+    Commentaires en attente de validation et approuvés.
+  </div>
+  <div id="adminCommentsList"></div>
 </div>
+
 <!-- ─── ELMECO WATERMARK FIXE ─── -->
-<div id="elmeco-watermark" class="elmeco-watermark" title="Une courtoisie de  <span class="elmeco-label">Une courtoisie de</span>
-  <span class="elmeco-icon">⚡</span>
-  <span class="elmeco-name">ELMECO</span>
-  <span class="elmeco-icon">⚡</span>
-  <span class="elmeco-tagline">Votre solution en<br>électricité 💡 depuis 1980</span>
+<div id="elmeco-watermark" class="elmeco-watermark" title="Une courtoisie de  <span class="elmeco-label">Une courtoisie de</span>
+  <span class="elmeco-icon">⚡</span>
+  <span class="elmeco-name">ELMECO</span>
+  <span class="elmeco-icon">⚡</span>
+  <span class="elmeco-tagline">Votre solution en<br>électricité 💡 depuis 1980</span>
 </div>
 <a class="wa-btn" href="https://wa.me/50939295488?text=Bonjour%20ELMECO%20%21%20Je%20vous%20contacte%20depuis%20le%20calendrier%20AYITI%20nan%20Mondyal%202026.%20Je%20souhaite%20obtenir%20plus%20d%27informations%20sur%20vos%20services." target="_blank" rel="noopener" title="Contacter ELMECO sur WhatsApp">
-  <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+  <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
 </a>
+
 <!-- ─── PUB ELMECO FLOTTANTE ─── -->
 <div id="elmecoAdFloat" onclick="expandElmecoAd(event)">
-  <button id="elmecoAdClose" onclick="event.stopPropagation(); collapseElmecoAd()">✕</button>
-  <img id="elmecoAdImg" src="" alt="ELMECO">
+  <button id="elmecoAdClose" onclick="event.stopPropagation(); collapseElmecoAd()">✕</button>
+  <img id="elmecoAdImg" src="" alt="ELMECO">
 </div>
+
+
 </body>
 </html>
