@@ -519,6 +519,32 @@ function propagateKnockout() {
   const { qualified } = getQualifiedTeams();
   let changed = false;
 
+  // === RÉSOLUTION DIRECTE OFFICIELLE DU ROUND OF 32 ===
+  // Bracket officiel FIFA finalisé (28 juin 2026). Chaque placeholder du
+  // Round of 32 est mappé directement à l'équipe réelle, SANS dépendre des
+  // scores de groupes (robuste même si Firebase n'a pas chargé les scores).
+  const OFFICIAL_SEEDS = {
+    // 1ers de groupe
+    '1er Gr.A':'Mexique', '1er Gr.B':'Suisse', '1er Gr.C':'Brésil',
+    '1er Gr.D':'États-Unis', '1er Gr.E':'Allemagne', '1er Gr.F':'Pays-Bas',
+    '1er Gr.G':'Belgique', '1er Gr.H':'Espagne', '1er Gr.I':'France',
+    '1er Gr.J':'Argentine', '1er Gr.K':'Colombie', '1er Gr.L':'Angleterre',
+    // 2es de groupe
+    '2e Gr.A':'Afrique du Sud', '2e Gr.B':'Canada', '2e Gr.C':'Maroc',
+    '2e Gr.D':'Australie', '2e Gr.E':'Côte d\'Ivoire', '2e Gr.F':'Japon',
+    '2e Gr.G':'Égypte', '2e Gr.H':'Cap-Vert', '2e Gr.I':'Norvège',
+    '2e Gr.J':'Autriche', '2e Gr.K':'Portugal', '2e Gr.L':'Croatie',
+    // 8 meilleurs 3es affectés à leur slot officiel
+    '3e Gr.A/B/C/D/F':'Paraguay',   // M74 vs Allemagne (3e D)
+    '3e Gr.C/D/F/G/H':'Suède',      // M77 vs France (3e F)
+    '3e Gr.C/E/F/H/I':'Équateur',   // M79 vs Mexique (3e E)
+    '3e Gr.E/H/I/J/K':'RD Congo',   // M80 vs Angleterre (3e K)
+    '3e Gr.B/E/F/I/J':'Bosnie-Herzégovine', // M81 vs USA (3e B)
+    '3e Gr.A/E/H/I/J':'Sénégal',    // M82 vs Belgique (3e I)
+    '3e Gr.E/F/G/I/J':'Algérie',    // M85 vs Suisse (3e J)
+    '3e Gr.D/E/I/J/L':'Ghana',      // M87 vs Colombie (3e L)
+  };
+
   // === Affectation OFFICIELLE FIGÉE des 3es (combinaison B,D,E,F,I,J,K,L) ===
   // Source : bracket officiel FIFA finalisé (28 juin 2026)
   // Chaque slot "3e Gr.X/Y/Z..." reçoit le 3e du groupe indiqué
@@ -548,16 +574,24 @@ function propagateKnockout() {
         const currentVal = saved[side];
         const placeholder = m[side];
 
-        // Ne pas écraser une équipe saisie manuellement
-        const isUnresolved = !currentVal || currentVal === placeholder;
-        if (!isUnresolved) return;
+        // Considéré non-résolu si vide, égal au placeholder d'origine,
+        // OU si la valeur sauvegardée est elle-même un placeholder
+        // (cas d'un ancien KO_STATE en cache contenant "1er Gr.X", "3e Gr...", etc.)
+        const looksLikePlaceholder = !currentVal
+          || currentVal === placeholder
+          || /^(1er Gr\.|2e Gr\.|3e Gr\.|Vainq\. )/.test(currentVal);
+        if (!looksLikePlaceholder) return;
 
-        let resolved = resolveSeedPlaceholder(placeholder, qualified);
+        // 1) PRIORITÉ : table officielle directe du Round of 32 (sans dépendre des scores)
+        let resolved = OFFICIAL_SEEDS[placeholder] || null;
+
+        // 2) Fallback : résolution dynamique par scores de groupes
+        if (!resolved) resolved = resolveSeedPlaceholder(placeholder, qualified);
+        // 3) Vainqueurs des tours précédents (dynamique)
         if (!resolved) resolved = resolveWinnerPlaceholder(placeholder);
 
-        // Slot de 3e : "3e Gr.A/B/C/D/F" → on regarde quel 1er il affronte
+        // 4) Fallback 3es par contrainte (si pas dans la table officielle)
         if (!resolved && /^3e Gr\./.test(placeholder)) {
-          // Trouver le 1er adverse dans ce match
           const otherSide = side === 'home' ? 'away' : 'home';
           const otherPlaceholder = m[otherSide];
           const m1 = otherPlaceholder.match(/^1er Gr\.([A-L])$/);
