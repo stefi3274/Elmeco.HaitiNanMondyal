@@ -511,6 +511,9 @@ function getQualifiedTeams() {
 function renderBracket() {
   const s = loadState();
   if (s.ko) Object.assign(KO_STATE, s.ko);
+  if (typeof propagateWinners === 'function') {
+    try { propagateWinners(); } catch(e) {}
+  }
 
   const cont = $('bracketContent');
   cont.innerHTML = '';
@@ -1428,6 +1431,83 @@ function renderHaitiMatches() {
 
 let currentKOId = null;
 
+// ── Montée automatique des vainqueurs dans le bracket ──
+// Résout les placeholders "Vainq. M73" / "Perdant DF1" à partir des scores saisis.
+function propagateWinners() {
+  let changed = false;
+
+  function buildByLabel() {
+    const map = {};
+    KNOCKOUT_ROUNDS.forEach(round => {
+      round.matches.forEach(m => {
+        const saved = KO_STATE[m.id] || {};
+        map[m.label] = {
+          home: saved.home || m.home || '',
+          away: saved.away || m.away || '',
+          scoreH: saved.scoreH !== undefined ? saved.scoreH : '',
+          scoreA: saved.scoreA !== undefined ? saved.scoreA : '',
+          penWinner: saved.penWinner || '',
+        };
+      });
+    });
+    return map;
+  }
+
+  const isPh = v => !v || /^(1er Gr\.|2e Gr\.|3e Gr\.|Vainq\.|Perdant )/.test(v);
+
+  function outcome(label, map) {
+    const x = map[label];
+    if (!x) return { winner: null, loser: null };
+    if (isPh(x.home) || isPh(x.away)) return { winner: null, loser: null };
+    const sh = parseInt(x.scoreH), sa = parseInt(x.scoreA);
+    if (isNaN(sh) || isNaN(sa)) return { winner: null, loser: null };
+    if (sh > sa) return { winner: x.home, loser: x.away };
+    if (sa > sh) return { winner: x.away, loser: x.home };
+    // match nul : décidé aux tirs au but
+    if (x.penWinner === 'home') return { winner: x.home, loser: x.away };
+    if (x.penWinner === 'away') return { winner: x.away, loser: x.home };
+    return { winner: null, loser: null };
+  }
+
+  function resolve(ph, map) {
+    if (!ph) return null;
+    let mv = ph.match(/^Vainq\.\s*(.+)$/);
+    if (mv) return outcome(mv[1].trim(), map).winner;
+    let ml = ph.match(/^Perdant\s*(.+)$/);
+    if (ml) return outcome(ml[1].trim(), map).loser;
+    return null;
+  }
+
+  // Plusieurs passes pour propager en cascade (16es -> finale)
+  for (let pass = 0; pass < 6; pass++) {
+    const map = buildByLabel();
+    let passChanged = false;
+    KNOCKOUT_ROUNDS.forEach(round => {
+      round.matches.forEach(m => {
+        ['home', 'away'].forEach(side => {
+          const saved = KO_STATE[m.id] || {};
+          const cur = saved[side];
+          const ph = m[side];
+          // ne traiter que les placeholders de liaison (Vainq./Perdant)
+          if (!/^(Vainq\.|Perdant )/.test(ph)) return;
+          // ne pas écraser une équipe déjà résolue manuellement
+          const needs = !cur || cur === ph || /^(Vainq\.|Perdant )/.test(cur);
+          if (!needs) return;
+          const team = resolve(ph, map);
+          if (team && cur !== team) {
+            KO_STATE[m.id] = { ...saved, [side]: team };
+            changed = true; passChanged = true;
+          }
+        });
+      });
+    });
+    if (!passChanged) break;
+  }
+
+  if (changed) saveState({ ko: KO_STATE });
+  return changed;
+}
+
 // ── Festivité : avion avec drapeau du pays éliminé ──
 let _planeQueue = [];
 let _planeRunning = false;
@@ -1633,6 +1713,10 @@ function saveKOMatch() {
     scorers: scorers,
   };
   saveState({ ko: KO_STATE });
+  // Faire monter les vainqueurs au tour suivant (cascade)
+  if (typeof propagateWinners === 'function') {
+    try { propagateWinners(); } catch(e) {}
+  }
   // Déclenche l'animation d'avion pour le perdant (équipe éliminée)
   if (typeof checkEliminationFlyout === 'function') {
     try { checkEliminationFlyout(currentKOId); } catch(e) {}
