@@ -463,183 +463,125 @@ return b.gf - a.gf;
 
 const best8Third = thirdPlace.slice(0, 8).map(t => t.name);
 
-return { qualified, best8Third, thirdPlace };
+return { qualified, best8Third };
 }
-
-// Vérifie si tous les matchs d'un groupe sont terminés
-function isGroupComplete(letter) {
-  const groupMatches = MATCHES.filter(m => m.group === letter);
-  if (!groupMatches.length) return false;
-  return groupMatches.every(m => {
-    const s = SCORES[m.id];
-    return s && s.home !== '' && s.home !== null && s.home !== undefined &&
-           !isNaN(parseInt(s.home)) && !isNaN(parseInt(s.away));
-  });
-}
-
-// Résout un placeholder "1er Gr.C" ou "2e Gr.F" vers le nom de l'équipe
-function resolveSeedPlaceholder(placeholder, qualified) {
-  const m1 = placeholder.match(/^1er Gr\.([A-L])$/);
-  const m2 = placeholder.match(/^2e Gr\.([A-L])$/);
-  if (m1) {
-    const letter = m1[1];
-    if (isGroupComplete(letter) && qualified[letter]) return qualified[letter].first;
-  }
-  if (m2) {
-    const letter = m2[1];
-    if (isGroupComplete(letter) && qualified[letter]) return qualified[letter].second;
-  }
-  return null;
-}
-
-// Résout "Vainq. M74" / "Vainq. QF1" vers le vainqueur si le score existe
-function resolveWinnerPlaceholder(placeholder) {
-  const m = placeholder.match(/^Vainq\. (M\d+|QF\d+|DF\d+)$/);
-  if (!m) return null;
-  let koMatch = null;
-  for (const round of KNOCKOUT_ROUNDS) {
-    const found = round.matches.find(x => x.label === m[1]);
-    if (found) { koMatch = found; break; }
-  }
-  if (!koMatch) return null;
-  const saved = KO_STATE[koMatch.id];
-  if (!saved || saved.scoreH === undefined || saved.scoreA === undefined ||
-      saved.scoreH === '' || saved.scoreA === '') return null;
-  const sh = parseInt(saved.scoreH), sa = parseInt(saved.scoreA);
-  if (isNaN(sh) || isNaN(sa)) return null;
-  const home = saved.home, away = saved.away;
-  if (!home || !away) return null;
-  if (sh > sa) return home;
-  if (sa > sh) return away;
-  return null; // match nul : penalties à saisir manuellement
-}
-
-// Propage automatiquement les équipes qualifiées dans le bracket
-function propagateKnockout() {
-  const { qualified } = getQualifiedTeams();
-  let changed = false;
-
-  // === RÉSOLUTION DIRECTE OFFICIELLE DU ROUND OF 32 ===
-  // Bracket officiel FIFA finalisé (28 juin 2026). Chaque placeholder du
-  // Round of 32 est mappé directement à l'équipe réelle, SANS dépendre des
-  // scores de groupes (robuste même si Firebase n'a pas chargé les scores).
-  const OFFICIAL_SEEDS = {
-    // 1ers de groupe
-    '1er Gr.A':'Mexique', '1er Gr.B':'Suisse', '1er Gr.C':'Brésil',
-    '1er Gr.D':'États-Unis', '1er Gr.E':'Allemagne', '1er Gr.F':'Pays-Bas',
-    '1er Gr.G':'Belgique', '1er Gr.H':'Espagne', '1er Gr.I':'France',
-    '1er Gr.J':'Argentine', '1er Gr.K':'Colombie', '1er Gr.L':'Angleterre',
-    // 2es de groupe
-    '2e Gr.A':'Afrique du Sud', '2e Gr.B':'Canada', '2e Gr.C':'Maroc',
-    '2e Gr.D':'Australie', '2e Gr.E':'Côte d\'Ivoire', '2e Gr.F':'Japon',
-    '2e Gr.G':'Égypte', '2e Gr.H':'Cap-Vert', '2e Gr.I':'Norvège',
-    '2e Gr.J':'Autriche', '2e Gr.K':'Portugal', '2e Gr.L':'Croatie',
-    // 8 meilleurs 3es affectés à leur slot officiel
-    '3e Gr.A/B/C/D/F':'Paraguay',   // M74 vs Allemagne (3e D)
-    '3e Gr.C/D/F/G/H':'Suède',      // M77 vs France (3e F)
-    '3e Gr.C/E/F/H/I':'Équateur',   // M79 vs Mexique (3e E)
-    '3e Gr.E/H/I/J/K':'RD Congo',   // M80 vs Angleterre (3e K)
-    '3e Gr.B/E/F/I/J':'Bosnie-Herzégovine', // M81 vs USA (3e B)
-    '3e Gr.A/E/H/I/J':'Sénégal',    // M82 vs Belgique (3e I)
-    '3e Gr.E/F/G/I/J':'Algérie',    // M85 vs Suisse (3e J)
-    '3e Gr.D/E/I/J/L':'Ghana',      // M87 vs Colombie (3e L)
-  };
-
-  // === Affectation OFFICIELLE FIGÉE des 3es (combinaison B,D,E,F,I,J,K,L) ===
-  // Source : bracket officiel FIFA finalisé (28 juin 2026)
-  // Chaque slot "3e Gr.X/Y/Z..." reçoit le 3e du groupe indiqué
-  const THIRD_ASSIGN = {
-    'A': 'E', // Mexique (1er A) affronte le 3e du groupe E
-    'E': 'D', // Allemagne (1er E) affronte le 3e du groupe D
-    'D': 'B', // USA (1er D) affronte le 3e du groupe B
-    'G': 'I', // Belgique (1er G) affronte le 3e du groupe I
-    'L': 'K', // Angleterre (1er L) affronte le 3e du groupe K
-    'B': 'J', // Suisse (1er B) affronte le 3e du groupe J
-    'I': 'F', // France (1er I) affronte le 3e du groupe F
-    'K': 'L', // Colombie (1er K) affronte le 3e du groupe L
-  };
-
-  // Récupère le nom du 3e d'un groupe donné
-  function thirdOfGroup(letter) {
-    if (!isGroupComplete(letter)) return null;
-    const st = computeStandings(letter);
-    return (st && st.length >= 3) ? st[2].name : null;
-  }
-
-  KNOCKOUT_ROUNDS.forEach(round => {
-    if (round.readonly) return;
-    round.matches.forEach(m => {
-      ['home', 'away'].forEach(side => {
-        const saved = KO_STATE[m.id] || {};
-        const currentVal = saved[side];
-        const placeholder = m[side];
-
-        // Considéré non-résolu si vide, égal au placeholder d'origine,
-        // OU si la valeur sauvegardée est elle-même un placeholder
-        // (cas d'un ancien KO_STATE en cache contenant "1er Gr.X", "3e Gr...", etc.)
-        const looksLikePlaceholder = !currentVal
-          || currentVal === placeholder
-          || /^(1er Gr\.|2e Gr\.|3e Gr\.|Vainq\. )/.test(currentVal);
-        if (!looksLikePlaceholder) return;
-
-        // 1) PRIORITÉ : table officielle directe du Round of 32 (sans dépendre des scores)
-        let resolved = OFFICIAL_SEEDS[placeholder] || null;
-
-        // 2) Fallback : résolution dynamique par scores de groupes
-        if (!resolved) resolved = resolveSeedPlaceholder(placeholder, qualified);
-        // 3) Vainqueurs des tours précédents (dynamique)
-        if (!resolved) resolved = resolveWinnerPlaceholder(placeholder);
-
-        // 4) Fallback 3es par contrainte (si pas dans la table officielle)
-        if (!resolved && /^3e Gr\./.test(placeholder)) {
-          const otherSide = side === 'home' ? 'away' : 'home';
-          const otherPlaceholder = m[otherSide];
-          const m1 = otherPlaceholder.match(/^1er Gr\.([A-L])$/);
-          if (m1) {
-            const winnerGroup = m1[1];
-            const thirdGroup = THIRD_ASSIGN[winnerGroup];
-            if (thirdGroup) resolved = thirdOfGroup(thirdGroup);
-          }
-        }
-
-        if (resolved && currentVal !== resolved) {
-          KO_STATE[m.id] = { ...saved, [side]: resolved };
-          changed = true;
-        }
-      });
-    });
-  });
-
-  if (changed) saveState({ ko: KO_STATE });
-  return changed;
-}
-
-// Génère l'encart d'honneur pour un match terminé (gagnant + perdant)
-// Couleurs d'Haïti : bleu #00209F et rouge #D21034
+// Encart d'honneur pour un match terminé (couleurs d'Haïti, partage WhatsApp).
 function honorMatchHtml(winner, loser, scoreW, scoreL) {
 if (!winner || !loser) return '';
-const winFlag = getFlag(winner);
-const loseFlag = getFlag(loser);
-const honorMsg = '🏆 Bravo ' + winFlag + ' ' + winner + ' ! Victoire ' + scoreW + '–' + scoreL + ' contre ' + loseFlag + ' ' + loser + '. 👏 Respect aux deux équipes ! #AyitiNanMondyal #BouyonBoul';
-const waLink = 'https://wa.me/?text=' + encodeURIComponent(honorMsg);
-return ''
-+ '<div class="ko-honor" style="margin:8px 6px 6px;padding:8px 10px;border-radius:10px;'
+const wf = getFlag(winner), lf = getFlag(loser);
+const msg = '🏆 Bravo ' + wf + ' ' + winner + ' ! Victoire ' + scoreW + '–' + scoreL + ' contre ' + lf + ' ' + loser + '. 👏 Respect aux deux équipes ! #AyitiNanMondyal';
+const wa = 'https://wa.me/?text=' + encodeURIComponent(msg);
+return '<div style="margin:8px 6px 6px;padding:8px 10px;border-radius:10px;'
 + 'background:linear-gradient(135deg,rgba(0,32,159,0.12),rgba(210,16,52,0.12));'
 + 'border:1px solid rgba(0,32,159,0.25);font-family:var(--font-ui);">'
 + '<div style="font-size:11px;line-height:1.5;color:var(--text);">'
-+ '🏆 <b>' + winFlag + ' ' + winner + '</b> s\'impose !<br>'
-+ '<span style="color:var(--text2);font-size:10px;">👏 Honneur à ' + loseFlag + ' ' + loser + ' pour le combat.</span>'
-+ '</div>'
-+ '<a href="' + waLink + '" target="_blank" rel="noopener" '
++ '🏆 <b>' + wf + ' ' + winner + '</b> s\'impose !<br>'
++ '<span style="color:var(--text2);font-size:10px;">👏 Honneur à ' + lf + ' ' + loser + '.</span></div>'
++ '<a href="' + wa + '" target="_blank" rel="noopener" '
 + 'onclick="event.stopPropagation(); if(typeof addPoints===\'function\')addPoints(2,\'Partage honneur 🇭🇹\');" '
 + 'style="display:inline-flex;align-items:center;gap:5px;margin-top:6px;padding:5px 10px;'
 + 'background:#25D366;color:#fff;border-radius:14px;font-size:11px;font-weight:700;text-decoration:none;">'
-+ '📲 Partager (+2 pts)</a>'
-+ '</div>';
++ '📲 Partager (+2 pts)</a></div>';
+}
+
+// Table officielle directe du Round of 32 (bracket FIFA figé, 28 juin 2026).
+// Résout chaque placeholder en équipe réelle SANS dépendre des scores.
+const OFFICIAL_SEEDS = {
+'1er Gr.A':'Mexique','1er Gr.B':'Suisse','1er Gr.C':'Brésil','1er Gr.D':'États-Unis',
+'1er Gr.E':'Allemagne','1er Gr.F':'Pays-Bas','1er Gr.G':'Belgique','1er Gr.H':'Espagne',
+'1er Gr.I':'France','1er Gr.J':'Argentine','1er Gr.K':'Colombie','1er Gr.L':'Angleterre',
+'2e Gr.A':'Afrique du Sud','2e Gr.B':'Canada','2e Gr.C':'Maroc','2e Gr.D':'Australie',
+"2e Gr.E":"Côte d'Ivoire",'2e Gr.F':'Japon','2e Gr.G':'Égypte','2e Gr.H':'Cap-Vert',
+'2e Gr.I':'Norvège','2e Gr.J':'Autriche','2e Gr.K':'Portugal','2e Gr.L':'Croatie',
+'3e Gr.A/B/C/D/F':'Paraguay','3e Gr.C/D/F/G/H':'Suède','3e Gr.C/E/F/H/I':'Équateur',
+'3e Gr.E/H/I/J/K':'RD Congo','3e Gr.B/E/F/I/J':'Bosnie-Herzégovine','3e Gr.A/E/H/I/J':'Sénégal',
+'3e Gr.E/F/G/I/J':'Algérie','3e Gr.D/E/I/J/L':'Ghana',
+};
+
+// Remplit automatiquement les équipes du bracket dans KO_STATE.
+function resolveBracketTeams() {
+let changed = false;
+
+// Index : label de match -> {home, away, scoreH, scoreA} effectifs
+function buildMatchByLabel() {
+const map = {};
+KNOCKOUT_ROUNDS.forEach(round => {
+round.matches.forEach(m => {
+const saved = KO_STATE[m.id] || {};
+map[m.label] = {
+id: m.id,
+home: saved.home || m.home || '',
+away: saved.away || m.away || '',
+scoreH: saved.scoreH !== undefined ? saved.scoreH : '',
+scoreA: saved.scoreA !== undefined ? saved.scoreA : '',
+pen: saved.pen,
+};
+});
+});
+return map;
+}
+
+// Détermine vainqueur/perdant d'un match résolu, ou null
+function outcome(label, map) {
+const x = map[label];
+if (!x) return { winner:null, loser:null };
+const sh = parseInt(x.scoreH), sa = parseInt(x.scoreA);
+// équipes doivent être de vraies équipes (pas des placeholders)
+const isPh = v => !v || /^(1er Gr\.|2e Gr\.|3e Gr\.|Vainq\.|Perdant )/.test(v);
+if (isPh(x.home) || isPh(x.away)) return { winner:null, loser:null };
+if (isNaN(sh) || isNaN(sa)) return { winner:null, loser:null };
+if (sh > sa) return { winner:x.home, loser:x.away };
+if (sa > sh) return { winner:x.away, loser:x.home };
+// égalité : tirs au but (champ pen: 'home'|'away')
+if (x.pen === 'home') return { winner:x.home, loser:x.away };
+if (x.pen === 'away') return { winner:x.away, loser:x.home };
+return { winner:null, loser:null }; // nul sans tab : indéterminé
+}
+
+// Résout un placeholder en équipe réelle, ou null si pas encore connu
+function resolve(ph, map) {
+if (!ph) return null;
+// 1) Round of 32 : table officielle directe
+if (OFFICIAL_SEEDS[ph]) return OFFICIAL_SEEDS[ph];
+// 2) "Vainq. LABEL" -> vainqueur du match
+let mv = ph.match(/^Vainq\.\s*(.+)$/);
+if (mv) return outcome(mv[1].trim(), map).winner;
+// 3) "Perdant LABEL" -> perdant du match (pour la 3e place)
+let ml = ph.match(/^Perdant\s*(.+)$/);
+if (ml) return outcome(ml[1].trim(), map).loser;
+return null;
+}
+
+// Plusieurs passes pour propager en cascade (16es -> finale)
+for (let pass = 0; pass < 6; pass++) {
+const map = buildMatchByLabel();
+let passChanged = false;
+KNOCKOUT_ROUNDS.forEach(round => {
+round.matches.forEach(m => {
+['home','away'].forEach(side => {
+const saved = KO_STATE[m.id] || {};
+const cur = saved[side];
+const ph = m[side];
+// non-résolu si vide, = placeholder, ou si valeur stockée est un placeholder
+const isPh = !cur || cur === ph || /^(1er Gr\.|2e Gr\.|3e Gr\.|Vainq\.|Perdant )/.test(cur);
+if (!isPh) return;
+const team = resolve(ph, map);
+if (team && cur !== team) {
+KO_STATE[m.id] = { ...saved, [side]: team };
+changed = true; passChanged = true;
+}
+});
+});
+});
+if (!passChanged) break; // plus rien à propager
+}
+
+if (changed) saveState({ ko: KO_STATE });
+return changed;
 }
 
 function renderBracket() {
-  propagateKnockout();
+resolveBracketTeams();
 const s = loadState();
 if (s.ko) Object.assign(KO_STATE, s.ko);
 const cont = $('bracketContent');
@@ -693,6 +635,7 @@ ${stadVal ? `<span>🏟️ ${stadVal}${cityVal ? ', ' + cityVal : ''}</span>` : 
 </div>
 `;
 } else {
+card.title = 'Cliquer pour modifier';
 card.innerHTML = `
 <div class="ko-card-label" style="background:${r.color || 'var(--knockout)'}">
 ${m.label}
@@ -721,7 +664,9 @@ parseInt(scoreH) > parseInt(scoreA) ? awayVal : homeVal,
 Math.max(parseInt(scoreH), parseInt(scoreA)),
 Math.min(parseInt(scoreH), parseInt(scoreA)))
 : ''}
+<div class="ko-edit-hint">✏ modifier</div>
 `;
+card.addEventListener('click', () => openKOModal(m.id, r));
 }
 row.appendChild(card);
 });
@@ -1133,8 +1078,8 @@ renderMatchCard(m, tmp);
 parent.appendChild(tmp.firstChild);
 applyFilters();
 }
-const vbt = $('view-bestthirds');
-if (vbt && vbt.style.display !== 'none') renderBestThirds();
+const _vbt = $('view-bestthirds');
+if (_vbt && _vbt.style.display !== 'none') renderBestThirds();
 renderHaitiMatches();
 // Rafraîchir classement, groupes et buteurs immédiatement
 try { if (typeof renderRanking === 'function') renderRanking(); } catch(e) {}
@@ -1163,8 +1108,8 @@ renderMatchCard(m, tmp);
 parent.appendChild(tmp.firstChild);
 applyFilters();
 }
-const vbt2 = $('view-bestthirds');
-if (vbt2 && vbt2.style.display !== 'none') renderBestThirds();
+const _vbt2 = $('view-bestthirds');
+if (_vbt2 && _vbt2.style.display !== 'none') renderBestThirds();
 closeModal();
 }
 // TEAM_DATA — voir data.js
@@ -1491,8 +1436,37 @@ $('koScoreHLbl').textContent = (this.value || 'DOM.').substring(0,6).toUpperCase
 $('koAway').oninput = function() {
 $('koScoreALbl').textContent = (this.value || 'EXT.').substring(0,6).toUpperCase();
 };
+// Remplir la liste des buteurs
+const koList = $('koScorersList');
+if (koList) {
+koList.innerHTML = '';
+if (saved.scorers && saved.scorers.length) {
+saved.scorers.forEach(s => addKOScorerRow(s));
+}
+}
 $('koModalOverlay').classList.add('open');
 $('koHome').focus();
+}
+// Ajoute une ligne de saisie de buteur dans le modal KO
+function addKOScorerRow(data) {
+const list = $('koScorersList');
+if (!list) return;
+const home = $('koHome').value || 'Domicile';
+const away = $('koAway').value || 'Extérieur';
+const row = document.createElement('div');
+row.className = 'scorer-row';
+row.style.cssText = 'display:flex;gap:6px;margin-bottom:6px;align-items:center;';
+row.innerHTML = `
+<select class="scorer-select" style="flex:1;">
+<option value="">-- Équipe --</option>
+<option value="${home}" ${data && data.team === home ? 'selected' : ''}>${getFlag(home)} ${home}</option>
+<option value="${away}" ${data && data.team === away ? 'selected' : ''}>${getFlag(away)} ${away}</option>
+</select>
+<input class="scorer-min" type="text" placeholder="Nom" style="flex:2;width:auto;" value="${data ? (data.name||'') : ''}">
+<input class="scorer-min" type="number" placeholder="min" min="1" max="120" style="width:60px;" value="${data ? (data.minute||'') : ''}">
+<button class="scorer-del" type="button" onclick="this.closest('.scorer-row').remove()" style="background:none;border:none;color:#e74c3c;font-size:18px;cursor:pointer;">×</button>
+`;
+list.appendChild(row);
 }
 function closeKOModal() {
 $('koModalOverlay').classList.remove('open');
@@ -1500,7 +1474,19 @@ currentKOId = null;
 }
 function saveKOMatch() {
 if (!currentKOId) return;
+// Collecter les buteurs
+const scorers = [];
+document.querySelectorAll('#koScorersList .scorer-row').forEach(row => {
+const sel = row.querySelector('select');
+const inputs = row.querySelectorAll('input');
+const team = sel ? sel.value : '';
+const name = inputs[0] ? inputs[0].value.trim() : '';
+const minute = inputs[1] ? inputs[1].value.trim() : '';
+if (name) scorers.push({ team, name, minute });
+});
+const prev = KO_STATE[currentKOId] || {};
 KO_STATE[currentKOId] = {
+...prev,
 home: $('koHome').value.trim(),
 away: $('koAway').value.trim(),
 time: $('koTime').value.trim(),
@@ -1508,15 +1494,29 @@ stadium: $('koStadium').value.trim(),
 city: $('koCity').value.trim(),
 scoreH: $('koScoreH').value,
 scoreA: $('koScoreA').value,
+scorers,
 };
 saveState({ ko: KO_STATE });
+// Publier sur Firebase si dispo (pour tous les visiteurs)
+if (window.fbSaveKO) {
+try { window.fbSaveKO(currentKOId, KO_STATE[currentKOId]); } catch(e) {}
+}
+resolveBracketTeams();
 renderBracket();
+const sc = $('view-scorers');
+if (sc && sc.style.display !== 'none') renderScorers();
 closeKOModal();
 }
 function clearKOMatch() {
 if (!currentKOId) return;
-delete KO_STATE[currentKOId];
+const idToClear = currentKOId;
+delete KO_STATE[idToClear];
 saveState({ ko: KO_STATE });
+// Publier la suppression sur Firebase (pour tous)
+if (window.fbSaveKO) {
+try { window.fbSaveKO(idToClear, null); } catch(e) {}
+}
+resolveBracketTeams();
 renderBracket();
 closeKOModal();
 }
@@ -1576,7 +1576,6 @@ ${standings.some(s => s.j > 0) ? standings[0].j + ' / 3 journées jouées' : 'Pa
 cont.appendChild(block);
 });
 }
-
 // Classement provisoire des meilleurs 3es (règle FIFA : points, diff, buts)
 function renderBestThirds() {
 const cont = $('bestThirdsContent');
@@ -1584,44 +1583,41 @@ if (!cont) return;
 const groups = ['A','B','C','D','E','F','G','H','I','J','K','L'];
 const thirds = [];
 groups.forEach(letter => {
+if (!GROUPS_DATA[letter]) return;
 const st = computeStandings(letter);
 if (st && st.length >= 3) {
 const t = st[2];
-thirds.push({ name: t.name, group: letter, j: t.j, pts: t.pts, bp: t.bp, bc: t.bc, diff: t.bp - t.bc });
+thirds.push({ name:t.name, group:letter, j:t.j, pts:t.pts, bp:t.bp, bc:t.bc, diff:t.bp-t.bc });
 }
 });
-thirds.sort((a, b) => (b.pts - a.pts) || (b.diff - a.diff) || (b.bp - a.bp));
+thirds.sort((a,b) => (b.pts-a.pts) || (b.diff-a.diff) || (b.bp-a.bp));
 if (!thirds.length) {
 cont.innerHTML = '<div style="color:var(--text2);font-family:var(--font-ui);font-size:13px;padding:30px;text-align:center;">📊 Classement disponible une fois les groupes joués.</div>';
 return;
 }
-const rows = thirds.map((t, i) => {
-const diffStr = t.diff > 0 ? '<span style="color:#1db954">+' + t.diff + '</span>'
-: t.diff < 0 ? '<span style="color:#e74c3c">' + t.diff + '</span>'
-: '<span style="color:var(--text2)">0</span>';
-const isHaiti = t.name === 'Haïti';
-const bg = i < 8 ? 'rgba(29,185,84,0.08)' : 'rgba(231,76,60,0.06)';
-const posColor = i < 8 ? '#1db954' : '#e74c3c';
-return '<tr style="background:' + bg + '">'
-+ '<td style="text-align:center;font-weight:700;color:' + posColor + '">' + (i + 1) + '</td>'
-+ '<td><span style="font-size:18px">' + getFlag(t.name) + '</span> '
-+ '<span' + (isHaiti ? ' style="color:#d4213d;font-weight:700"' : '') + '>' + t.name + '</span> '
-+ '<span style="font-size:10px;color:var(--text2)">(Gr. ' + t.group + ')</span></td>'
-+ '<td style="text-align:center">' + t.j + '</td>'
-+ '<td style="text-align:center">' + diffStr + '</td>'
-+ '<td style="text-align:center;font-weight:700">' + t.pts + '</td>'
-+ '</tr>';
+const rows = thirds.map((t,i) => {
+const diffStr = t.diff>0 ? '<span style="color:#1db954">+'+t.diff+'</span>' : t.diff<0 ? '<span style="color:#e74c3c">'+t.diff+'</span>' : '<span style="color:var(--text2)">0</span>';
+const isHaiti = t.name==='Haïti';
+const bg = i<8 ? 'rgba(29,185,84,0.08)' : 'rgba(231,76,60,0.06)';
+const posColor = i<8 ? '#1db954' : '#e74c3c';
+return '<tr style="background:'+bg+'">'
++'<td style="text-align:center;font-weight:700;color:'+posColor+'">'+(i+1)+'</td>'
++'<td><span style="font-size:18px">'+getFlag(t.name)+'</span> '
++'<span'+(isHaiti?' style="color:#d4213d;font-weight:700"':'')+'>'+t.name+'</span> '
++'<span style="font-size:10px;color:var(--text2)">(Gr. '+t.group+')</span></td>'
++'<td style="text-align:center">'+t.j+'</td>'
++'<td style="text-align:center">'+diffStr+'</td>'
++'<td style="text-align:center;font-weight:700">'+t.pts+'</td></tr>';
 }).join('');
 cont.innerHTML =
 '<div style="padding:10px 14px;font-family:var(--font-ui);font-size:12px;color:var(--text2);line-height:1.5">'
-+ 'Classement provisoire des 3es de chaque groupe.<br>'
-+ 'Les <span style="color:#1db954;font-weight:700">8 meilleurs (vert)</span> se qualifient pour les 16es de finale.'
-+ '</div>'
-+ '<table class="ranking-table" style="width:100%"><thead><tr>'
-+ '<th>#</th><th>Équipe</th><th title="Matchs joués">MJ</th><th title="Différence">Diff</th><th title="Points">Pts</th>'
-+ '</tr></thead><tbody>' + rows + '</tbody></table>';
++'Classement provisoire des 3es de chaque groupe.<br>'
++'Les <span style="color:#1db954;font-weight:700">8 meilleurs (vert)</span> se qualifient pour les 16es de finale.'
++'</div>'
++'<table class="ranking-table" style="width:100%"><thead><tr>'
++'<th>#</th><th>Équipe</th><th title="Matchs joués">MJ</th><th title="Différence">Diff</th><th title="Points">Pts</th>'
++'</tr></thead><tbody>'+rows+'</tbody></table>';
 }
-
 function renderScorers() {
 const cont = $('scorersContent');
 if (!cont) return;
@@ -1639,6 +1635,19 @@ team: scorer.team || '—',
 goals: 0,
 minutes: []
 };
+}
+scorerMap[key].goals++;
+if (scorer.minute) scorerMap[key].minutes.push(scorer.minute + "'");
+});
+});
+// Inclure aussi les buteurs des matchs de phase finale (KO_STATE)
+Object.values(KO_STATE).forEach(ko => {
+if (!ko || !ko.scorers || !ko.scorers.length) return;
+ko.scorers.forEach(scorer => {
+if (!scorer.name || !scorer.name.trim()) return;
+const key = scorer.name.trim().toLowerCase() + '|' + (scorer.team || '');
+if (!scorerMap[key]) {
+scorerMap[key] = { name: scorer.name.trim(), team: scorer.team || '—', goals: 0, minutes: [] };
 }
 scorerMap[key].goals++;
 if (scorer.minute) scorerMap[key].minutes.push(scorer.minute + "'");
@@ -1749,23 +1758,8 @@ return;
 upcoming.forEach(m => {
 const p = PRONOS[m.id];
 const isDone = p && p.home !== undefined && p.away !== undefined;
-const score = SCORES[m.id];
-const hasResult = score && score.home !== '' && score.home !== null && score.home !== undefined && !isNaN(parseInt(score.home));
 const card = document.createElement('div');
 card.className = 'prono-card' + (isDone ? ' prono-done' : '');
-let bottomHtml;
-if (isDone && hasResult) {
-const pts = calcPronoPoints(p, score);
-const resultColor = pts === 5 ? '#1db954' : pts === 3 ? '#1db954' : '#e74c3c';
-const resultLabel = pts === 5 ? '🎯 Score exact ! +5 pts' : pts === 3 ? '✅ Bon résultat +3 pts' : '❌ Raté';
-bottomHtml = `<div class="prono-done-badge" style="color:${resultColor};border-color:${resultColor}">`
-+ `Ton prono : ${p.home}–${p.away} · Résultat : ${score.home}–${score.away}<br>`
-+ `<b>${resultLabel}</b></div>`;
-} else if (isDone) {
-bottomHtml = `<div class="prono-done-badge">✅ Pronostic enregistré : ${p.home} – ${p.away}</div>`;
-} else {
-bottomHtml = `<button class="prono-save-btn" onclick="saveProno(${m.id})">💾 Enregistrer (+3 pts)</button>`;
-}
 card.innerHTML = `
 <div class="prono-card-meta">
 <span>Gr. ${m.group} — ${m.date}</span>
@@ -1777,16 +1771,19 @@ card.innerHTML = `
 <span class="prono-name">${m.home}</span>
 </div>
 <div class="prono-score-inputs">
-<input class="prono-input" id="ph-${m.id}" type="number" min="0" max="20" value="${isDone ? p.home : ''}" placeholder="–"${isDone&&hasResult?' disabled':''}>
+<input class="prono-input" id="ph-${m.id}" type="number" min="0" max="20" value="${isDone ? p.home : ''}" placeholder="–">
 <span class="prono-sep">–</span>
-<input class="prono-input" id="pa-${m.id}" type="number" min="0" max="20" value="${isDone ? p.away : ''}" placeholder="–"${isDone&&hasResult?' disabled':''}>
+<input class="prono-input" id="pa-${m.id}" type="number" min="0" max="20" value="${isDone ? p.away : ''}" placeholder="–">
 </div>
 <div class="prono-team">
 <span class="prono-flag">${getFlag(m.away)}</span>
 <span class="prono-name">${m.away}</span>
 </div>
 </div>
-${bottomHtml}
+${isDone
+? `<div class="prono-done-badge">✅ Pronostic enregistré : ${p.home} – ${p.away}</div>`
+: `<button class="prono-save-btn" onclick="saveProno(${m.id})">💾 Enregistrer (+3 pts)</button>`
+}
 `;
 grid.appendChild(card);
 });
@@ -1805,10 +1802,7 @@ return;
 const isNew = !PRONOS[matchId];
 PRONOS[matchId] = { home: h, away: a, timestamp: Date.now() };
 savePronos();
-// Récompense : +3 points Ambassadeur pour un nouveau pronostic
-if (isNew && typeof addPoints === 'function') {
-addPoints(3, 'Pronostic enregistré 🎯');
-}
+if (isNew && typeof addPoints === 'function') addPoints(3, 'Pronostic enregistré 🎯');
 renderPronostics(); // refresh
 }
 function calcPronoPoints(prono, score) {
@@ -1822,34 +1816,26 @@ const realWin = sh > sa ? 'H' : sa > sh ? 'A' : 'N';
 if (pronoWin === realWin) return 3; // bon résultat
 return 0;
 }
-
-// Crédite les points Ambassadeur pour les pronostics gagnants une fois le match terminé.
-// Utilise un marqueur "credited" dans PRONOS pour ne créditer qu'une seule fois.
+// Crédite les points Ambassadeur pour les pronos gagnants (une seule fois).
 function creditWinningPronos() {
 if (typeof _user === 'undefined' || !_user) return;
-let totalAwarded = 0;
-let exactCount = 0, goodCount = 0;
+let total = 0, exact = 0;
 Object.entries(PRONOS).forEach(([mid, p]) => {
-if (!p || p.credited) return; // déjà crédité
+if (!p || p.credited) return;
 const s = SCORES[parseInt(mid)];
 if (!s || s.home === '' || s.home === null || s.home === undefined) return;
 if (isNaN(parseInt(s.home)) || isNaN(parseInt(s.away))) return;
 const pts = calcPronoPoints(p, s);
-if (pts > 0) {
-totalAwarded += pts;
-if (pts === 5) exactCount++; else goodCount++;
-}
-p.credited = true; // marque comme traité (gagnant ou non)
+if (pts > 0) { total += pts; if (pts === 5) exact++; }
+p.credited = true;
 });
-if (totalAwarded > 0) {
-_user.points = (_user.points || 0) + totalAwarded;
+if (total > 0) {
+_user.points = (_user.points || 0) + total;
 saveUser();
-updateUserBadge();
-let msg = '🎯 +' + totalAwarded + ' pts pronostics';
-if (exactCount) msg += ' (' + exactCount + ' score' + (exactCount>1?'s':'') + ' exact' + (exactCount>1?'s':'') + ' !)';
+if (typeof updateUserBadge === 'function') updateUserBadge();
+let msg = '🎯 +' + total + ' pts pronostics';
+if (exact) msg += ' (' + exact + ' exact' + (exact>1?'s':'') + ' !)';
 showPointsToast(msg);
-}
-if (totalAwarded > 0 || Object.values(PRONOS).some(p => p && p.credited)) {
 savePronos();
 }
 }
@@ -2712,17 +2698,55 @@ document.querySelectorAll('.filter-btn:not(:first-child)').forEach(btn => {
 const group = btn.getAttribute('onclick').match(/'([A-L])'/)?.[1];
 if (group) btn.style.borderColor = GROUP_COLORS[group];
 });
-// ── Bouton "Remplir le bracket automatiquement" ──
-function autoFillBracket() {
-  try {
-    const changed = propagateKnockout();
-    renderBracket();
-    if (typeof showPointsToast === 'function') {
-      showPointsToast(changed ? '✅ Bracket mis à jour !' : 'ℹ️ Rien à remplir pour le moment.');
-    }
-  } catch (e) {
-    console.error('autoFillBracket:', e);
-  }
+// ── Propagation automatique des vainqueurs en phase finale (8es -> finale) ──
+// Quand un match KO a un score, on remplace W{id} / L{id} dans les matchs suivants.
+function propagateKnockout() {
+if (typeof MATCHES === 'undefined') return;
+let changed = false;
+// Pour chaque match de phase finale terminé, calculer vainqueur/perdant
+const winners = {}; // numéro -> nom équipe
+const losers = {};
+MATCHES.forEach(m => {
+if (!['F16','F8','QF','SF','TP','FIN'].includes(m.group)) return;
+const s = SCORES[m.id];
+if (!s || s.home === '' || s.home === null || s.home === undefined) return;
+const h = parseInt(s.home), a = parseInt(s.away);
+if (isNaN(h) || isNaN(a)) return;
+// Ne pas propager si les équipes sont encore des placeholders
+const homeIsPlaceholder = /^[WL]?\d/.test(m.home) || m.home.includes('/') || /^[12]/.test(m.home) || /^[GH][12]/.test(m.home);
+const awayIsPlaceholder = /^[WL]?\d/.test(m.away) || m.away.includes('/') || /^[12]/.test(m.away) || /^[GH][12]/.test(m.away);
+let winner = null, loser = null;
+if (h > a) { winner = m.home; loser = m.away; }
+else if (h < a) { winner = m.away; loser = m.home; }
+else {
+// Égalité : vainqueur déterminé par tirs au but (champ s.pen: 'home'|'away')
+if (s.pen === 'home') { winner = m.home; loser = m.away; }
+else if (s.pen === 'away') { winner = m.away; loser = m.home; }
+else return; // pas de vainqueur défini, on ne propage pas
+}
+// N'enregistrer que si le vainqueur n'est pas lui-même un placeholder non résolu
+if (winner && !winner.includes('/') && !/^[WL]\d/.test(winner)) {
+winners[m.id] = winner;
+losers[m.id] = loser;
+}
+});
+// Remplacer les placeholders W{id} et L{id} dans les matchs suivants
+MATCHES.forEach(m => {
+if (!['F8','QF','SF','TP','FIN'].includes(m.group)) return;
+['home','away'].forEach(side => {
+const val = m[side];
+const wMatch = /^W(\d+)$/.exec(val);
+const lMatch = /^L(\d+)$/.exec(val);
+if (wMatch && winners[parseInt(wMatch[1])]) {
+m[side] = winners[parseInt(wMatch[1])];
+changed = true;
+} else if (lMatch && losers[parseInt(lMatch[1])]) {
+m[side] = losers[parseInt(lMatch[1])];
+changed = true;
+}
+});
+});
+return changed;
 }
 // ── Application des scores reçus de Firebase (pour TOUS les visiteurs) ──
 window._applyFbScores = function(fbScores) {
@@ -2742,6 +2766,7 @@ mvp: scoreObj.mvp || null
 // Propager les vainqueurs en phase finale (8es -> finale)
 try { propagateKnockout(); } catch(e) {}
 try { if (typeof creditWinningPronos === 'function') creditWinningPronos(); } catch(e) {}
+// Rafraîchit l'affichage des cartes visibles
 try {
 document.querySelectorAll('.match-card[data-id]').forEach(card => {
 const id = parseInt(card.getAttribute('data-id'));
@@ -2760,7 +2785,30 @@ try { if (typeof renderRanking === 'function') renderRanking(); } catch(e) {}
 try { if (typeof renderGroups === 'function') renderGroups(); } catch(e) {}
 try { if (typeof renderScorers === 'function') renderScorers(); } catch(e) {}
 };
-// ── Accès admin secret : triple clic sur le ballon ⚽ ──────────────────
+// ── Réception du bracket (phase finale) depuis Firebase, pour TOUS ──
+window._applyFbKO = function(fbKO) {
+if (!fbKO) return;
+// Fusionne les données KO de Firebase dans KO_STATE local
+Object.entries(fbKO).forEach(([koId, koObj]) => {
+if (koObj && typeof koObj === 'object') {
+KO_STATE[koId] = { ...(KO_STATE[koId] || {}), ...koObj };
+}
+});
+// Sauvegarde locale + propagation en cascade des vainqueurs
+try { saveState({ ko: KO_STATE }); } catch(e) {}
+try { resolveBracketTeams(); } catch(e) {}
+// Rafraîchit le bracket si visible
+try {
+const vk = $('view-knockout');
+if (vk && vk.style.display !== 'none') renderBracket();
+else renderBracket(); // re-render silencieux pour garder l'état à jour
+} catch(e) {}
+// Rafraîchit le classement des buteurs (les buteurs KO comptent désormais)
+try {
+const vs = $('view-scorers');
+if (vs && vs.style.display !== 'none') renderScorers();
+} catch(e) {}
+};
 (function() {
 let _clicks = 0, _timer = null;
 document.addEventListener('DOMContentLoaded', function() {

@@ -122,6 +122,23 @@
     }
     return set(ref(db, 'scores/' + matchId), scoreObj);
   };
+  // ── Sync bracket (phase finale) depuis Firebase pour TOUS les visiteurs ──
+  function syncKO() {
+    onValue(ref(db, 'ko'), snap => {
+      const data = snap.val() || {};
+      window._fbKO = data;
+      if (typeof window._applyFbKO === 'function') {
+        window._applyFbKO(data);
+      }
+    });
+  }
+  // ── Écriture d'un match de phase finale vers Firebase (réservé admin) ──
+  window.fbSaveKO = function(koId, koObj) {
+    if (koObj === null || koObj === undefined) {
+      return remove(ref(db, 'ko/' + koId));
+    }
+    return set(ref(db, 'ko/' + koId), koObj);
+  };
   // ── Sync commentaires depuis Firebase ──
   function syncComments() {
     onValue(ref(db, 'comments'), snap => {
@@ -215,6 +232,7 @@
     syncReactions();
    // syncComments();
     syncScores();
+    syncKO();
     syncPronos();
     syncUsers();
   });
@@ -437,13 +455,13 @@
       <button class="btn-haiti-theme" id="btnInstall" onclick="installApp()" title="Installer l'application" style="display:none;font-size:18px;padding:7px 10px;">⬇️</button>
     </div>
     <!-- CENTRE : Logo -->
-    <div class="logo" style="flex:1;justify-content:center;">
-      <div class="logo-icon" id="secretAdminTrigger">⚽</div>
-      <div>
-        <div class="logo-text">AYITI nan Mondyal</div>
-        <div class="logo-sub">11 Juin — 19 Juillet</div>
-      </div>
-    </div>
+    <div class="logo" style="flex:1;justify-content:center;text-align:center;">
+      <div class="logo-icon" id="secretAdminTrigger">⚽</div>
+      <div>
+        <div class="logo-text">AYITI nan Mondyal</div>
+        <div class="logo-sub">11 Juin — 19 Juillet · USA · Canada · Mexique</div>
+      </div>
+    </div>
     <!-- DROITE : Réglages -->
     <button onclick="openSettingsPanel()" style="flex-shrink:0;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:20px;padding:7px 10px;cursor:pointer;transition:all 0.2s;" title="Réglages">⚙️</button>
   </div>
@@ -886,7 +904,6 @@
     <div style="background:linear-gradient(135deg,rgba(232,185,35,0.15),rgba(212,33,61,0.1));border:1px solid rgba(232,185,35,0.3);border-radius:12px;padding:14px;margin-bottom:16px;font-family:var(--font-ui);">
       <div style="font-size:14px;font-weight:700;color:var(--accent);margin-bottom:6px;">🎯 Pronostique et deviens Ambassadeur !</div>
       <div style="font-size:12px;color:var(--text2);line-height:1.7;">
-        Chaque pronostic enregistré → <b style="color:var(--text)">+3 pts</b> direct.<br>
         Bon résultat → <b style="color:#1db954">+3 pts</b> · Score exact → <b style="color:#1db954">+5 pts</b> 🔥<br>
         <span style="font-size:11px;">Tes points te font grimper au classement <b>🏆 Ambassadeurs ELMECO</b>.</span>
       </div>
@@ -923,6 +940,16 @@
       <div id="bestThirdsContent"></div>
     </div>
   </div>
+  <!-- AMBASSADORS VIEW -->
+  <div id="view-ambassadors" style="display:none;">
+    <div style="font-family:var(--font-ui);font-size:13px;color:var(--text2);margin-bottom:16px;line-height:1.6;">
+      🏆 <b style="color:var(--accent);">Classement des Ambassadeurs ELMECO</b><br>
+      Gagne des points en pronostiquant, en partageant et en participant !
+    </div>
+    <div class="ranking-wrap">
+      <div id="ambassadorsContent"></div>
+    </div>
+  </div>
 </main>
 <!-- ─── MODAL SCORE ─── -->
 <div class="modal-overlay" id="modalOverlay" onclick="closeModalOnOverlay(event)">
@@ -1038,6 +1065,12 @@
           </div>
         </div>
       </div>
+      <!-- Buteurs -->
+      <div class="ko-section-sep-lg">
+        <div class="ko-section-lbl" style="margin-bottom:10px;">⚽ Buteurs</div>
+        <div id="koScorersList"></div>
+        <button type="button" onclick="addKOScorerRow()" style="margin-top:8px;width:100%;padding:8px;background:var(--surface2);border:1px dashed var(--border);border-radius:8px;color:var(--accent);font-size:13px;cursor:pointer;">+ Ajouter un buteur</button>
+      </div>
     </div>
     <div class="ko-modal-footer">
       <button class="btn-clear" onclick="clearKOMatch()" title="Effacer ce match">🗑</button>
