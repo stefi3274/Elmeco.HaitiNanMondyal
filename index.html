@@ -395,9 +395,10 @@
   .elim-plane {
     position: fixed;
     bottom: 70px;
-    left: -60vw;
+    right: -60vw;
     z-index: 9000;
     display: flex;
+    flex-direction: row-reverse;
     align-items: center;
     gap: 0;
     pointer-events: none;
@@ -406,7 +407,7 @@
   }
   .elim-plane-emoji {
     font-size: 38px;
-    transform: scaleX(-1);
+    transform: scaleX(1);
     filter: drop-shadow(0 3px 6px rgba(0,0,0,0.4));
   }
   .elim-plane-banner {
@@ -416,18 +417,18 @@
     background: linear-gradient(135deg, #00209F, #D21034);
     color: #fff;
     padding: 8px 16px;
-    border-radius: 0 10px 10px 0;
-    margin-left: -4px;
+    border-radius: 10px 0 0 10px;
+    margin-right: -4px;
     box-shadow: 0 4px 14px rgba(0,0,0,0.35);
     border: 2px solid rgba(255,255,255,0.25);
-    border-left: none;
+    border-right: none;
     position: relative;
   }
   .elim-plane-banner::before {
     /* corde reliant l'avion à la banderole */
     content: "";
     position: absolute;
-    left: -10px;
+    right: -10px;
     top: 50%;
     width: 10px;
     height: 2px;
@@ -441,11 +442,11 @@
     letter-spacing: 0.3px;
   }
   @keyframes elim-fly {
-    0%   { left: -60vw; transform: translateY(0); }
+    0%   { right: -60vw; transform: translateY(0); }
     25%  { transform: translateY(-12px); }
     50%  { transform: translateY(0); }
     75%  { transform: translateY(-10px); }
-    100% { left: 110vw; transform: translateY(0); }
+    100% { right: 110vw; transform: translateY(0); }
   }
   @media (max-width: 600px) {
     .elim-plane-emoji { font-size: 30px; }

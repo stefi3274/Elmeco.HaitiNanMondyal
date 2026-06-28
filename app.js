@@ -269,6 +269,33 @@ function renderCalendar() {
     if (!byDate[m.date]) byDate[m.date] = [];
     byDate[m.date].push(m);
   });
+  // Ajouter les matchs de phase finale dont les 2 équipes sont connues
+  if (typeof KNOCKOUT_ROUNDS !== 'undefined') {
+    const isPh = v => !v || /^(1er Gr\.|2e Gr\.|3e Gr\.|Vainq\.|Perdant )/.test(v);
+    KNOCKOUT_ROUNDS.forEach(round => {
+      round.matches.forEach(km => {
+        const saved = KO_STATE[km.id] || {};
+        const home = saved.home || km.home || '';
+        const away = saved.away || km.away || '';
+        if (isPh(home) || isPh(away)) return; // équipes pas encore connues
+        const koMatch = {
+          id: km.id,
+          home: home,
+          away: away,
+          date: saved.time && saved.date ? saved.date : km.date,
+          day: round.round,
+          time: saved.time || km.time || '',
+          stadium: saved.stadium || km.stadium || '',
+          city: saved.city || km.city || '',
+          group: 'KO',
+          label: round.round + ' · ' + km.label,
+          isKO: true,
+        };
+        if (!byDate[koMatch.date]) byDate[koMatch.date] = [];
+        byDate[koMatch.date].push(koMatch);
+      });
+    });
+  }
   const monthOrder = {'juin':6,'juil':7,'juil.':7};
   const sortedDates = Object.keys(byDate).sort((a, b) => {
     const partsA = a.split(' ');
@@ -1509,17 +1536,19 @@ function propagateWinners() {
 }
 
 // ── Festivité : avion avec drapeau du pays éliminé ──
-let _planeQueue = [];
-let _planeRunning = false;
+// Liste persistante des équipes éliminées (pour rejouer les avions en boucle)
+let _eliminatedTeams = [];
+let _planeIndex = 0;
+let _planeLoopTimer = null;
+let _planeBusy = false;
 
-// Détermine le perdant d'un match KO et lance son avion
+// Détermine le perdant d'un match KO et l'ajoute aux éliminés
 function checkEliminationFlyout(koId) {
   const ko = KO_STATE[koId];
   if (!ko) return;
   const sh = parseInt(ko.scoreH), sa = parseInt(ko.scoreA);
   if (isNaN(sh) || isNaN(sa)) return;
   if (!ko.home || !ko.away) return;
-  // Ne pas traiter des placeholders comme des équipes
   const isPh = v => /^(1er Gr\.|2e Gr\.|3e Gr\.|Vainq\.|Perdant )/.test(v);
   if (isPh(ko.home) || isPh(ko.away)) return;
 
@@ -1527,33 +1556,65 @@ function checkEliminationFlyout(koId) {
   if (sh > sa) loser = ko.away;
   else if (sa > sh) loser = ko.home;
   else {
-    // Match nul : le perdant est déterminé par les tirs au but
     if (ko.penWinner === 'home') loser = ko.away;
     else if (ko.penWinner === 'away') loser = ko.home;
-    else return; // pas encore tranché
+    else return;
   }
   if (loser) queueEliminationPlane(loser);
 }
 
-// Ajoute un pays à la file des avions
+// Ajoute un pays à la liste des éliminés (sans doublon) et démarre la boucle
 function queueEliminationPlane(team) {
-  _planeQueue.push(team);
-  if (!_planeRunning) runPlaneQueue();
+  if (!_eliminatedTeams.includes(team)) {
+    _eliminatedTeams.push(team);
+    // Persister pour que la boucle survive aux rechargements de page
+    try { saveState({ eliminated: _eliminatedTeams }); } catch(e) {}
+  }
+  // Montrer cet avion tout de suite
+  showEliminationPlane(team);
+  startPlaneLoop();
 }
 
-// Joue les avions à tour de rôle
-function runPlaneQueue() {
-  if (!_planeQueue.length) { _planeRunning = false; return; }
-  _planeRunning = true;
-  const team = _planeQueue.shift();
-  showEliminationPlane(team, () => {
-    // petite pause entre deux avions
-    setTimeout(runPlaneQueue, 600);
+// Démarre (ou redémarre) la boucle : un avion toutes les 30 secondes
+function startPlaneLoop() {
+  if (_planeLoopTimer) return; // déjà en cours
+  _planeLoopTimer = setInterval(() => {
+    if (!_eliminatedTeams.length || _planeBusy) return;
+    const team = _eliminatedTeams[_planeIndex % _eliminatedTeams.length];
+    _planeIndex++;
+    showEliminationPlane(team);
+  }, 30000); // 30 secondes
+}
+
+// Restaure la liste des éliminés au chargement et relance la boucle
+function initEliminationPlanes() {
+  // Recalculer tous les éliminés à partir des scores KO déjà saisis
+  const isPh = v => /^(1er Gr\.|2e Gr\.|3e Gr\.|Vainq\.|Perdant )/.test(v || '');
+  const found = [];
+  Object.values(KO_STATE).forEach(ko => {
+    if (!ko || !ko.home || !ko.away) return;
+    if (isPh(ko.home) || isPh(ko.away)) return;
+    const sh = parseInt(ko.scoreH), sa = parseInt(ko.scoreA);
+    if (isNaN(sh) || isNaN(sa)) return;
+    let loser = null;
+    if (sh > sa) loser = ko.away;
+    else if (sa > sh) loser = ko.home;
+    else {
+      if (ko.penWinner === 'home') loser = ko.away;
+      else if (ko.penWinner === 'away') loser = ko.home;
+    }
+    if (loser && !found.includes(loser)) found.push(loser);
   });
+  if (found.length) {
+    _eliminatedTeams = found;
+    try { saveState({ eliminated: _eliminatedTeams }); } catch(e) {}
+    startPlaneLoop();
+  }
 }
 
 // Affiche un avion qui traverse le bas de l'écran avec le drapeau
 function showEliminationPlane(team, onDone) {
+  _planeBusy = true;
   const flag = getFlag(team);
   const plane = document.createElement('div');
   plane.className = 'elim-plane';
@@ -1564,10 +1625,9 @@ function showEliminationPlane(team, onDone) {
       '<span class="elim-plane-text">' + team + ' · Rendez-vous 2030 · ELMECO 😘</span>' +
     '</span>';
   document.body.appendChild(plane);
-  // Retire après l'animation (durée CSS = 9s)
-  const cleanup = () => { plane.remove(); if (onDone) onDone(); };
+  const cleanup = () => { plane.remove(); _planeBusy = false; if (onDone) onDone(); };
   plane.addEventListener('animationend', cleanup);
-  setTimeout(cleanup, 9500); // filet de sécurité
+  setTimeout(cleanup, 9500);
 }
 
 function openKOModal(matchId, round) {
@@ -1997,6 +2057,8 @@ function personalizeSplash() {
 document.addEventListener('DOMContentLoaded', () => {
   personalizeSplash();
   setTimeout(hideSplash, 5000);
+  // Relance la boucle des avions (pays éliminés) après chargement
+  setTimeout(() => { try { initEliminationPlanes(); } catch(e) {} }, 7000);
 });
 window.addEventListener('load', () => setTimeout(hideSplash, 5000));
 setTimeout(hideSplash, 6000); // fallback absolu
