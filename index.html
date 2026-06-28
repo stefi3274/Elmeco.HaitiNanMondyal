@@ -376,6 +376,20 @@
   .match-card.match-haiti {
     border: 1px solid rgba(232,185,35,0.45);
   }
+
+  /* ── Responsive : stats du hero (48 nations, pays hôtes…) ── */
+  .hero-stats { flex-wrap: wrap; gap: 4px 0; }
+  @media (max-width: 600px) {
+    .hero-stats { flex-wrap: wrap; justify-content: space-around; padding: 10px 4px; }
+    .hero-stat { flex: 0 0 33.333%; padding: 8px 4px !important; border-right: none !important; box-sizing: border-box; }
+    .hero-stat-num { font-size: 19px !important; }
+    .hero-stat-lbl { font-size: 8px !important; }
+    .hero-big-date { font-size: 12px; line-height: 1.4; }
+  }
+  @media (max-width: 380px) {
+    .hero-stat { flex: 0 0 50%; }
+  }
+  .logo-sub { overflow: hidden; text-overflow: ellipsis; }
 </style>
 </head>
 <body style="overflow-x:hidden;">

@@ -581,9 +581,9 @@ return changed;
 }
 
 function renderBracket() {
-resolveBracketTeams();
 const s = loadState();
 if (s.ko) Object.assign(KO_STATE, s.ko);
+resolveBracketTeams();
 const cont = $('bracketContent');
 cont.innerHTML = '';
 const grid = document.createElement('div');
@@ -2701,52 +2701,8 @@ if (group) btn.style.borderColor = GROUP_COLORS[group];
 // ── Propagation automatique des vainqueurs en phase finale (8es -> finale) ──
 // Quand un match KO a un score, on remplace W{id} / L{id} dans les matchs suivants.
 function propagateKnockout() {
-if (typeof MATCHES === 'undefined') return;
-let changed = false;
-// Pour chaque match de phase finale terminé, calculer vainqueur/perdant
-const winners = {}; // numéro -> nom équipe
-const losers = {};
-MATCHES.forEach(m => {
-if (!['F16','F8','QF','SF','TP','FIN'].includes(m.group)) return;
-const s = SCORES[m.id];
-if (!s || s.home === '' || s.home === null || s.home === undefined) return;
-const h = parseInt(s.home), a = parseInt(s.away);
-if (isNaN(h) || isNaN(a)) return;
-// Ne pas propager si les équipes sont encore des placeholders
-const homeIsPlaceholder = /^[WL]?\d/.test(m.home) || m.home.includes('/') || /^[12]/.test(m.home) || /^[GH][12]/.test(m.home);
-const awayIsPlaceholder = /^[WL]?\d/.test(m.away) || m.away.includes('/') || /^[12]/.test(m.away) || /^[GH][12]/.test(m.away);
-let winner = null, loser = null;
-if (h > a) { winner = m.home; loser = m.away; }
-else if (h < a) { winner = m.away; loser = m.home; }
-else {
-// Égalité : vainqueur déterminé par tirs au but (champ s.pen: 'home'|'away')
-if (s.pen === 'home') { winner = m.home; loser = m.away; }
-else if (s.pen === 'away') { winner = m.away; loser = m.home; }
-else return; // pas de vainqueur défini, on ne propage pas
-}
-// N'enregistrer que si le vainqueur n'est pas lui-même un placeholder non résolu
-if (winner && !winner.includes('/') && !/^[WL]\d/.test(winner)) {
-winners[m.id] = winner;
-losers[m.id] = loser;
-}
-});
-// Remplacer les placeholders W{id} et L{id} dans les matchs suivants
-MATCHES.forEach(m => {
-if (!['F8','QF','SF','TP','FIN'].includes(m.group)) return;
-['home','away'].forEach(side => {
-const val = m[side];
-const wMatch = /^W(\d+)$/.exec(val);
-const lMatch = /^L(\d+)$/.exec(val);
-if (wMatch && winners[parseInt(wMatch[1])]) {
-m[side] = winners[parseInt(wMatch[1])];
-changed = true;
-} else if (lMatch && losers[parseInt(lMatch[1])]) {
-m[side] = losers[parseInt(lMatch[1])];
-changed = true;
-}
-});
-});
-return changed;
+// Délègue au système unifié (KNOCKOUT_ROUNDS + table officielle + cascade)
+try { return resolveBracketTeams(); } catch(e) { return false; }
 }
 // ── Application des scores reçus de Firebase (pour TOUS les visiteurs) ──
 window._applyFbScores = function(fbScores) {
