@@ -1,3 +1,21 @@
+// Vérifie si une valeur est un vrai nom d'équipe (pas un placeholder)
+function isTeamResolved(val) {
+  if (!val) return false;
+  if (/^1er Gr\./.test(val)) return false;
+  if (/^2e Gr\./.test(val)) return false;
+  if (/^3e Gr\./.test(val)) return false;
+  if (/^Vainq\./.test(val)) return false;
+  if (/^Perdant/.test(val)) return false;
+  return true;
+}
+function seedLabel(val) {
+  if (!val) return '';
+  return val
+    .replace(/^1er Gr\./, '1er ')
+    .replace(/^2e Gr\./, '2e ')
+    .replace(/^3e Gr\./, '3e ')
+    .replace(/^Vainq\. /, 'V.');
+}
 const $ = id => document.getElementById(id);
 const setAll = (ids, prop, val) => ids.forEach(id => { const el = $(id); if (el) el[prop] = val; });
 const SCORES = {};
@@ -9,51 +27,51 @@ const KNOCKOUT_ROUNDS = [
 {
 round:'16es de finale', dates:'28 juin – 3 juillet', color:'#7c3aed',
 matches:[
-{id:'ko73', label:'M73', home:'2e Gr.A', away:'2e Gr.B', date:'28 juin', time:'15h00', stadium:'SoFi Stadium', city:'Los Angeles'},
-{id:'ko76', label:'M76', home:'1er Gr.C', away:'2e Gr.F', date:'28 juin', time:'13h00', stadium:'NRG Stadium', city:'Houston'},
-{id:'ko74', label:'M74', home:'1er Gr.E', away:'3e Gr.A/B/C/D/F', date:'29 juin', time:'16h30', stadium:'Gillette Stadium', city:'Boston'},
-{id:'ko75', label:'M75', home:'1er Gr.F', away:'2e Gr.C', date:'29 juin', time:'21h00', stadium:'Estadio BBVA', city:'Monterrey'},
-{id:'ko78', label:'M78', home:'2e Gr.E', away:'2e Gr.I', date:'30 juin', time:'13h00', stadium:'AT&T Stadium', city:'Dallas'},
-{id:'ko77', label:'M77', home:'1er Gr.I', away:'3e Gr.C/D/F/G/H', date:'30 juin', time:'17h00', stadium:'MetLife Stadium', city:'New York'},
-{id:'ko79', label:'M79', home:'1er Gr.A', away:'3e Gr.C/E/F/H/I', date:'1er juil.', time:'21h00', stadium:'Estadio Azteca', city:'Mexico'},
-{id:'ko80', label:'M80', home:'1er Gr.L', away:'3e Gr.E/H/I/J/K', date:'1er juil.', time:'12h00', stadium:'Mercedes-Benz Stadium', city:'Atlanta'},
-{id:'ko82', label:'M82', home:'1er Gr.G', away:'3e Gr.A/E/H/I/J', date:'1er juil.', time:'16h00', stadium:'Lumen Field', city:'Seattle'},
-{id:'ko81', label:'M81', home:'1er Gr.D', away:'3e Gr.B/E/F/I/J', date:'2 juil.', time:'21h00', stadium:"Levi's Stadium", city:'San Francisco'},
-{id:'ko84', label:'M84', home:'1er Gr.H', away:'2e Gr.J', date:'2 juil.', time:'15h00', stadium:'SoFi Stadium', city:'Los Angeles'},
-{id:'ko83', label:'M83', home:'2e Gr.K', away:'2e Gr.L', date:'2 juil.', time:'21h00', stadium:'BMO Field', city:'Toronto'},
-{id:'ko85', label:'M85', home:'1er Gr.B', away:'3e Gr.E/F/G/I/J', date:'3 juil.', time:'21h00', stadium:'BC Place', city:'Vancouver'},
-{id:'ko86', label:'M86', home:'1er Gr.J', away:'2e Gr.H', date:'3 juil.', time:'15h00', stadium:'Hard Rock Stadium', city:'Miami'},
-{id:'ko87', label:'M87', home:'1er Gr.K', away:'3e Gr.D/E/I/J/L', date:'3 juil.', time:'21h00', stadium:'Estadio Azteca', city:'Mexico'},
-{id:'ko88', label:'M88', home:'2e Gr.D', away:'2e Gr.G', date:'3 juil.', time:'14h00', stadium:'AT&T Stadium', city:'Dallas'},
+{id:'ko73', label:'M73', home:'2e Gr.A',         away:'2e Gr.B',          date:'28 juin', time:'15h00', stadium:'SoFi Stadium',           city:'Los Angeles'},
+{id:'ko76', label:'M76', home:'1er Gr.C',        away:'2e Gr.F',          date:'28 juin', time:'13h00', stadium:'NRG Stadium',             city:'Houston'},
+{id:'ko74', label:'M74', home:'1er Gr.E',        away:'3e Gr.A/B/C/D/F', date:'29 juin', time:'16h30', stadium:'Gillette Stadium',        city:'Boston'},
+{id:'ko75', label:'M75', home:'1er Gr.F',        away:'2e Gr.C',          date:'29 juin', time:'21h00', stadium:'Estadio BBVA',            city:'Monterrey'},
+{id:'ko78', label:'M78', home:'2e Gr.E',         away:'2e Gr.I',          date:'30 juin', time:'13h00', stadium:'AT&T Stadium',            city:'Dallas'},
+{id:'ko77', label:'M77', home:'1er Gr.I',        away:'3e Gr.C/D/F/G/H', date:'30 juin', time:'17h00', stadium:'MetLife Stadium',         city:'New York'},
+{id:'ko79', label:'M79', home:'1er Gr.A',        away:'3e Gr.C/E/F/H/I', date:'1er juil.', time:'21h00', stadium:'Estadio Azteca',        city:'Mexico'},
+{id:'ko80', label:'M80', home:'1er Gr.L',        away:'3e Gr.E/H/I/J/K', date:'1er juil.', time:'12h00', stadium:'Mercedes-Benz Stadium', city:'Atlanta'},
+{id:'ko82', label:'M82', home:'1er Gr.G',        away:'3e Gr.A/E/H/I/J', date:'1er juil.', time:'16h00', stadium:'Lumen Field',           city:'Seattle'},
+{id:'ko81', label:'M81', home:'1er Gr.D',        away:'3e Gr.B/E/F/I/J', date:'2 juil.',  time:'21h00', stadium:"Levi's Stadium",         city:'San Francisco'},
+{id:'ko84', label:'M84', home:'1er Gr.H',        away:'2e Gr.J',          date:'2 juil.',  time:'15h00', stadium:'SoFi Stadium',           city:'Los Angeles'},
+{id:'ko83', label:'M83', home:'2e Gr.K',         away:'2e Gr.L',          date:'2 juil.',  time:'21h00', stadium:'BMO Field',              city:'Toronto'},
+{id:'ko85', label:'M85', home:'1er Gr.B',        away:'3e Gr.E/F/G/I/J', date:'3 juil.',  time:'21h00', stadium:'BC Place',               city:'Vancouver'},
+{id:'ko86', label:'M86', home:'1er Gr.J',        away:'2e Gr.H',          date:'3 juil.',  time:'15h00', stadium:'Hard Rock Stadium',      city:'Miami'},
+{id:'ko87', label:'M87', home:'1er Gr.K',        away:'3e Gr.D/E/I/J/L', date:'3 juil.',  time:'21h00', stadium:'Estadio Azteca',         city:'Mexico'},
+{id:'ko88', label:'M88', home:'2e Gr.D',         away:'2e Gr.G',          date:'3 juil.',  time:'14h00', stadium:'AT&T Stadium',           city:'Dallas'},
 ]
 },
 {
 round:'8es de finale', dates:'5 – 7 juillet', color:'#2563eb',
 matches:[
 {id:'ko89', label:'M89', home:'Vainq. M74', away:'Vainq. M77', date:'5 juil.', time:'17h00', stadium:'Lincoln Financial Field', city:'Philadelphie'},
-{id:'ko90', label:'M90', home:'Vainq. M73', away:'Vainq. M75', date:'5 juil.', time:'13h00', stadium:'NRG Stadium', city:'Houston'},
-{id:'ko91', label:'M91', home:'Vainq. M76', away:'Vainq. M78', date:'5 juil.', time:'16h00', stadium:'MetLife Stadium', city:'New York'},
-{id:'ko92', label:'M92', home:'Vainq. M79', away:'Vainq. M80', date:'5 juil.', time:'20h00', stadium:'Estadio Azteca', city:'Mexico'},
-{id:'ko93', label:'M93', home:'Vainq. M83', away:'Vainq. M84', date:'6 juil.', time:'14h00', stadium:'AT&T Stadium', city:'Dallas'},
-{id:'ko94', label:'M94', home:'Vainq. M81', away:'Vainq. M82', date:'6 juil.', time:'19h00', stadium:'Lumen Field', city:'Seattle'},
-{id:'ko95', label:'M95', home:'Vainq. M86', away:'Vainq. M88', date:'7 juil.', time:'12h00', stadium:'Mercedes-Benz Stadium', city:'Atlanta'},
-{id:'ko96', label:'M96', home:'Vainq. M85', away:'Vainq. M87', date:'7 juil.', time:'16h00', stadium:'BC Place', city:'Vancouver'},
+{id:'ko90', label:'M90', home:'Vainq. M73', away:'Vainq. M75', date:'5 juil.', time:'13h00', stadium:'NRG Stadium',             city:'Houston'},
+{id:'ko91', label:'M91', home:'Vainq. M76', away:'Vainq. M78', date:'5 juil.', time:'16h00', stadium:'MetLife Stadium',         city:'New York'},
+{id:'ko92', label:'M92', home:'Vainq. M79', away:'Vainq. M80', date:'5 juil.', time:'20h00', stadium:'Estadio Azteca',          city:'Mexico'},
+{id:'ko93', label:'M93', home:'Vainq. M83', away:'Vainq. M84', date:'6 juil.', time:'14h00', stadium:'AT&T Stadium',            city:'Dallas'},
+{id:'ko94', label:'M94', home:'Vainq. M81', away:'Vainq. M82', date:'6 juil.', time:'19h00', stadium:'Lumen Field',             city:'Seattle'},
+{id:'ko95', label:'M95', home:'Vainq. M86', away:'Vainq. M88', date:'7 juil.', time:'12h00', stadium:'Mercedes-Benz Stadium',   city:'Atlanta'},
+{id:'ko96', label:'M96', home:'Vainq. M85', away:'Vainq. M87', date:'7 juil.', time:'16h00', stadium:'BC Place',                city:'Vancouver'},
 ]
 },
 {
 round:'Quarts de finale', dates:'9 – 11 juillet', color:'#0891b2',
 matches:[
-{id:'ko97', label:'QF1', home:'Vainq. M89', away:'Vainq. M90', date:'9 juil.', time:'17h00', stadium:'Gillette Stadium', city:'Boston'},
-{id:'ko98', label:'QF2', home:'Vainq. M93', away:'Vainq. M94', date:'10 juil.', time:'15h00', stadium:'SoFi Stadium', city:'Los Angeles'},
-{id:'ko99', label:'QF3', home:'Vainq. M91', away:'Vainq. M92', date:'11 juil.', time:'17h00', stadium:'Hard Rock Stadium', city:'Miami'},
-{id:'ko100', label:'QF4', home:'Vainq. M95', away:'Vainq. M96', date:'11 juil.', time:'13h00', stadium:'Arrowhead Stadium', city:'Kansas City'},
+{id:'ko97',  label:'QF1', home:'Vainq. M89', away:'Vainq. M90', date:'9 juil.',  time:'17h00', stadium:'Gillette Stadium',     city:'Boston'},
+{id:'ko98',  label:'QF2', home:'Vainq. M93', away:'Vainq. M94', date:'10 juil.', time:'15h00', stadium:'SoFi Stadium',         city:'Los Angeles'},
+{id:'ko99',  label:'QF3', home:'Vainq. M91', away:'Vainq. M92', date:'11 juil.', time:'17h00', stadium:'Hard Rock Stadium',    city:'Miami'},
+{id:'ko100', label:'QF4', home:'Vainq. M95', away:'Vainq. M96', date:'11 juil.', time:'13h00', stadium:'Arrowhead Stadium',    city:'Kansas City'},
 ]
 },
 {
 round:'Demi-finales', dates:'14 – 15 juillet', color:'#b45309',
 matches:[
-{id:'ko101', label:'DF1', home:'Vainq. QF1', away:'Vainq. QF2', date:'14 juil.', time:'15h00', stadium:'AT&T Stadium', city:'Dallas'},
-{id:'ko102', label:'DF2', home:'Vainq. QF3', away:'Vainq. QF4', date:'15 juil.', time:'15h00', stadium:'Mercedes-Benz Stadium', city:'Atlanta'},
+{id:'ko101', label:'DF1', home:'Vainq. QF1', away:'Vainq. QF2', date:'14 juil.', time:'15h00', stadium:'AT&T Stadium',           city:'Dallas'},
+{id:'ko102', label:'DF2', home:'Vainq. QF3', away:'Vainq. QF4', date:'15 juil.', time:'15h00', stadium:'Mercedes-Benz Stadium',  city:'Atlanta'},
 ]
 },
 {
@@ -72,6 +90,24 @@ matches:[
 // GROUPS_DATA — voir data.js
 const KO_STATE = {}; // keyed by match id, stores {home, away, time, stadium, city, scoreH, scoreA}
 const LS_KEY = 'cdm2026';
+const KO_VERSION = 'v2'; // Incrémente pour forcer reset du bracket si placeholders bloqués
+// ── Migration : vide les slots KO qui contiennent encore des placeholders ──
+(function migrateKOState() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return;
+    const state = JSON.parse(raw);
+    if (!state.ko) return;
+    let changed = false;
+    const PH = /^(1er Gr\.|2e Gr\.|3e Gr\.|Vainq\.|Perdant)/;
+    Object.keys(state.ko).forEach(id => {
+      const slot = state.ko[id];
+      if (slot.home && PH.test(slot.home)) { delete slot.home; changed = true; }
+      if (slot.away && PH.test(slot.away)) { delete slot.away; changed = true; }
+    });
+    if (changed) localStorage.setItem(LS_KEY, JSON.stringify(state));
+  } catch(e) {}
+})();
 function loadState() {
 try {
 const raw = localStorage.getItem(LS_KEY);
@@ -85,17 +121,17 @@ localStorage.setItem(LS_KEY, JSON.stringify(Object.assign(current, patch)));
 } catch(e) {}
 }
 const _state = loadState();
-let starred = _state.starred || [];
-const REACTIONS = _state.reactions || {}; // { matchId: { emoji: count, _mine: emoji } }
+let starred     = _state.starred     || [];
+const REACTIONS = _state.reactions  || {};   // { matchId: { emoji: count, _mine: emoji } }
 const REACTION_LIST = [
-{ key:'heart', emoji:'🧡', label:'J\'adore' },
-{ key:'bulb', emoji:'💡', label:'Génial !' },
-{ key:'broke', emoji:'💔', label:'Déçu' },
+{ key:'heart', emoji:'🧡', label:'J\'adore'    },
+{ key:'bulb',  emoji:'💡', label:'Génial !'   },
+{ key:'broke', emoji:'💔', label:'Déçu'       },
 { key:'angry', emoji:'😡', label:'En colère' },
 ];
 let currentGroup = 'all';
 let currentSearch = '';
-let isDark = _state.isDark !== undefined ? _state.isDark : true;
+let isDark      = _state.isDark !== undefined ? _state.isDark : true;
 if (_state.scores) Object.assign(SCORES, _state.scores);
 if (_state.ko) Object.assign(KO_STATE, _state.ko);
 function getFlag(name) { return FLAGS[name] || '🏴'; }
@@ -182,6 +218,9 @@ ${scoreHTML}
 <a class="btn-whatsapp" href="${waLink}" target="_blank" rel="noopener" onclick="event.stopPropagation(); addPoints(2, 'Partage WhatsApp');" title="Partager sur WhatsApp">
 <span>📲</span><span>WA</span>
 </a>
+<button class="match-star ${isStarred ? 'starred' : ''}" onclick="event.stopPropagation(); toggleStar(${m.id}, this)">
+${isStarred ? '⭐' : '☆'}
+</button>
 </div>
 <div class="match-team-reactions" onclick="event.stopPropagation()">
 <div class="team-react-col">
@@ -250,12 +289,12 @@ return parseInt(partsA[0]) - parseInt(partsB[0]);
 });
 // Date d'aujourd'hui (jour + mois local)
 const now = new Date();
-const todayDay = now.getDate();
+const todayDay   = now.getDate();
 const todayMonth = now.getMonth() + 1;
 const months = {'juin':6,'juil':7};
 function isPassee(dateStr) {
 const parts = dateStr.trim().split(' ');
-const day = parseInt(parts[0]);
+const day   = parseInt(parts[0]);
 const month = months[parts[1]] || 0;
 if (month !== todayMonth) return month < todayMonth;
 return day < todayDay;
@@ -305,7 +344,6 @@ cont.appendChild(section);
 });
 applyFilters();
 }
-
 function togglePastMatches() {
 const sections = document.querySelectorAll('#matchesContainer .past-section');
 const btn = document.querySelector('#pastMatchesBtn button');
@@ -437,7 +475,6 @@ $('groupTeamOverlay').classList.remove('open');
 function getQualifiedTeams() {
 const qualified = {};
 const thirdPlace = [];
-
 Object.keys(GROUPS_DATA).forEach(letter => {
 const standings = computeStandings(letter);
 qualified[letter] = {
@@ -454,136 +491,17 @@ gf: standings[2].bp
 });
 }
 });
-
 thirdPlace.sort((a, b) => {
 if (b.points !== a.points) return b.points - a.points;
 if (b.gd !== a.gd) return b.gd - a.gd;
 return b.gf - a.gf;
 });
-
 const best8Third = thirdPlace.slice(0, 8).map(t => t.name);
-
 return { qualified, best8Third };
 }
-// Encart d'honneur pour un match terminé (couleurs d'Haïti, partage WhatsApp).
-function honorMatchHtml(winner, loser, scoreW, scoreL) {
-if (!winner || !loser) return '';
-const wf = getFlag(winner), lf = getFlag(loser);
-const msg = '🏆 Bravo ' + wf + ' ' + winner + ' ! Victoire ' + scoreW + '–' + scoreL + ' contre ' + lf + ' ' + loser + '. 👏 Respect aux deux équipes ! #AyitiNanMondyal';
-const wa = 'https://wa.me/?text=' + encodeURIComponent(msg);
-return '<div style="margin:8px 6px 6px;padding:8px 10px;border-radius:10px;'
-+ 'background:linear-gradient(135deg,rgba(0,32,159,0.12),rgba(210,16,52,0.12));'
-+ 'border:1px solid rgba(0,32,159,0.25);font-family:var(--font-ui);">'
-+ '<div style="font-size:11px;line-height:1.5;color:var(--text);">'
-+ '🏆 <b>' + wf + ' ' + winner + '</b> s\'impose !<br>'
-+ '<span style="color:var(--text2);font-size:10px;">👏 Honneur à ' + lf + ' ' + loser + '.</span></div>'
-+ '<a href="' + wa + '" target="_blank" rel="noopener" '
-+ 'onclick="event.stopPropagation(); if(typeof addPoints===\'function\')addPoints(2,\'Partage honneur 🇭🇹\');" '
-+ 'style="display:inline-flex;align-items:center;gap:5px;margin-top:6px;padding:5px 10px;'
-+ 'background:#25D366;color:#fff;border-radius:14px;font-size:11px;font-weight:700;text-decoration:none;">'
-+ '📲 Partager (+2 pts)</a></div>';
-}
-
-// Table officielle directe du Round of 32 (bracket FIFA figé, 28 juin 2026).
-// Résout chaque placeholder en équipe réelle SANS dépendre des scores.
-const OFFICIAL_SEEDS = {
-'1er Gr.A':'Mexique','1er Gr.B':'Suisse','1er Gr.C':'Brésil','1er Gr.D':'États-Unis',
-'1er Gr.E':'Allemagne','1er Gr.F':'Pays-Bas','1er Gr.G':'Belgique','1er Gr.H':'Espagne',
-'1er Gr.I':'France','1er Gr.J':'Argentine','1er Gr.K':'Colombie','1er Gr.L':'Angleterre',
-'2e Gr.A':'Afrique du Sud','2e Gr.B':'Canada','2e Gr.C':'Maroc','2e Gr.D':'Australie',
-"2e Gr.E":"Côte d'Ivoire",'2e Gr.F':'Japon','2e Gr.G':'Égypte','2e Gr.H':'Cap-Vert',
-'2e Gr.I':'Norvège','2e Gr.J':'Autriche','2e Gr.K':'Portugal','2e Gr.L':'Croatie',
-'3e Gr.A/B/C/D/F':'Paraguay','3e Gr.C/D/F/G/H':'Suède','3e Gr.C/E/F/H/I':'Équateur',
-'3e Gr.E/H/I/J/K':'RD Congo','3e Gr.B/E/F/I/J':'Bosnie-Herzégovine','3e Gr.A/E/H/I/J':'Sénégal',
-'3e Gr.E/F/G/I/J':'Algérie','3e Gr.D/E/I/J/L':'Ghana',
-};
-
-// Remplit automatiquement les équipes du bracket dans KO_STATE.
-function resolveBracketTeams() {
-let changed = false;
-
-// Index : label de match -> {home, away, scoreH, scoreA} effectifs
-function buildMatchByLabel() {
-const map = {};
-KNOCKOUT_ROUNDS.forEach(round => {
-round.matches.forEach(m => {
-const saved = KO_STATE[m.id] || {};
-map[m.label] = {
-id: m.id,
-home: saved.home || m.home || '',
-away: saved.away || m.away || '',
-scoreH: saved.scoreH !== undefined ? saved.scoreH : '',
-scoreA: saved.scoreA !== undefined ? saved.scoreA : '',
-pen: saved.pen,
-};
-});
-});
-return map;
-}
-
-// Détermine vainqueur/perdant d'un match résolu, ou null
-function outcome(label, map) {
-const x = map[label];
-if (!x) return { winner:null, loser:null };
-const sh = parseInt(x.scoreH), sa = parseInt(x.scoreA);
-// équipes doivent être de vraies équipes (pas des placeholders)
-const isPh = v => !v || /^(1er Gr\.|2e Gr\.|3e Gr\.|Vainq\.|Perdant )/.test(v);
-if (isPh(x.home) || isPh(x.away)) return { winner:null, loser:null };
-if (isNaN(sh) || isNaN(sa)) return { winner:null, loser:null };
-if (sh > sa) return { winner:x.home, loser:x.away };
-if (sa > sh) return { winner:x.away, loser:x.home };
-// égalité : tirs au but (champ pen: 'home'|'away')
-if (x.pen === 'home') return { winner:x.home, loser:x.away };
-if (x.pen === 'away') return { winner:x.away, loser:x.home };
-return { winner:null, loser:null }; // nul sans tab : indéterminé
-}
-
-// Résout un placeholder en équipe réelle, ou null si pas encore connu
-function resolve(ph, map) {
-if (!ph) return null;
-// 1) Round of 32 : table officielle directe
-if (OFFICIAL_SEEDS[ph]) return OFFICIAL_SEEDS[ph];
-// 2) "Vainq. LABEL" -> vainqueur du match
-let mv = ph.match(/^Vainq\.\s*(.+)$/);
-if (mv) return outcome(mv[1].trim(), map).winner;
-// 3) "Perdant LABEL" -> perdant du match (pour la 3e place)
-let ml = ph.match(/^Perdant\s*(.+)$/);
-if (ml) return outcome(ml[1].trim(), map).loser;
-return null;
-}
-
-// Plusieurs passes pour propager en cascade (16es -> finale)
-for (let pass = 0; pass < 6; pass++) {
-const map = buildMatchByLabel();
-let passChanged = false;
-KNOCKOUT_ROUNDS.forEach(round => {
-round.matches.forEach(m => {
-['home','away'].forEach(side => {
-const saved = KO_STATE[m.id] || {};
-const cur = saved[side];
-const ph = m[side];
-// non-résolu si vide, = placeholder, ou si valeur stockée est un placeholder
-const isPh = !cur || cur === ph || /^(1er Gr\.|2e Gr\.|3e Gr\.|Vainq\.|Perdant )/.test(cur);
-if (!isPh) return;
-const team = resolve(ph, map);
-if (team && cur !== team) {
-KO_STATE[m.id] = { ...saved, [side]: team };
-changed = true; passChanged = true;
-}
-});
-});
-});
-if (!passChanged) break; // plus rien à propager
-}
-
-if (changed) saveState({ ko: KO_STATE });
-return changed;
-}
-
 function renderBracket() {
 const s = loadState();
 if (s.ko) Object.assign(KO_STATE, s.ko);
-resolveBracketTeams();
 const cont = $('bracketContent');
 cont.innerHTML = '';
 const grid = document.createElement('div');
@@ -601,14 +519,13 @@ row.className = 'bracket-matches-row';
 const isReadonly = !!r.readonly;
 r.matches.forEach(m => {
 const saved = KO_STATE[m.id] || {};
-const homeVal = saved.home || m.home || '';
-const awayVal = saved.away || m.away || '';
-const timeVal = saved.time || m.time || '';
+const homeVal = saved.home    || m.home    || '';
+const awayVal = saved.away    || m.away    || '';
+const timeVal = saved.time    || m.time    || '';
 const stadVal = saved.stadium || m.stadium || '';
-const cityVal = saved.city || m.city || '';
-const scoreH = saved.scoreH !== undefined ? saved.scoreH : '';
-const scoreA = saved.scoreA !== undefined ? saved.scoreA : '';
-
+const cityVal = saved.city    || m.city    || '';
+const scoreH  = saved.scoreH !== undefined ? saved.scoreH : '';
+const scoreA  = saved.scoreA !== undefined ? saved.scoreA : '';
 const hasScore = scoreH !== '' && scoreA !== '';
 const hasTeams = homeVal && awayVal;
 const card = document.createElement('div');
@@ -635,29 +552,33 @@ ${stadVal ? `<span>🏟️ ${stadVal}${cityVal ? ', ' + cityVal : ''}</span>` : 
 </div>
 `;
 } else {
-card.title = 'Cliquer pour modifier';
+const homeResolved = isTeamResolved(homeVal);
+const awayResolved = isTeamResolved(awayVal);
+card.title = 'Cliquer pour saisir le score';
 card.innerHTML = `
 <div class="ko-card-label" style="background:${r.color || 'var(--knockout)'}">
 ${m.label}
 ${hasScore ? `<span class="ko-score-badge">${scoreH}–${scoreA}</span>` : ''}
 </div>
 <div class="ko-team ${hasScore && parseInt(scoreH) > parseInt(scoreA) ? 'ko-winner' : ''}">
-<span class="ko-flag">${hasTeams ? getFlag(homeVal) : '❓'}</span>
-<span class="ko-name">${homeVal || '—'}</span>
-${hasScore ? `<span class="ko-pts">${scoreH}</span>` : ''}
+<span class="ko-flag">${homeResolved ? getFlag(homeVal) : '<span style="opacity:0.3;font-size:20px;">🏴</span>'}</span>
+<span class="ko-name${homeResolved ? '' : ' ko-pending'}">${homeResolved ? homeVal : 'À déterminer'}</span>
+${!homeResolved && homeVal ? `<span style="font-family:var(--font-ui);font-size:8px;color:var(--text2);opacity:0.6;margin-left:4px;">${seedLabel(homeVal)}</span>` : ''}
+${hasScore && homeResolved ? `<span class="ko-pts">${scoreH}</span>` : ''}
 </div>
 <div class="ko-separator"></div>
 <div class="ko-team ${hasScore && parseInt(scoreA) > parseInt(scoreH) ? 'ko-winner' : ''}">
-<span class="ko-flag">${hasTeams ? getFlag(awayVal) : '❓'}</span>
-<span class="ko-name">${awayVal || '—'}</span>
-${hasScore ? `<span class="ko-pts">${scoreA}</span>` : ''}
+<span class="ko-flag">${awayResolved ? getFlag(awayVal) : '<span style="opacity:0.3;font-size:20px;">🏴</span>'}</span>
+<span class="ko-name${awayResolved ? '' : ' ko-pending'}">${awayResolved ? awayVal : 'À déterminer'}</span>
+${!awayResolved && awayVal ? `<span style="font-family:var(--font-ui);font-size:8px;color:var(--text2);opacity:0.6;margin-left:4px;">${seedLabel(awayVal)}</span>` : ''}
+${hasScore && awayResolved ? `<span class="ko-pts">${scoreA}</span>` : ''}
 </div>
 ${timeVal || stadVal ? `
 <div class="ko-meta">
 ${timeVal ? `<span>🕐 ${timeVal}</span>` : ''}
 ${stadVal ? `<span>🏟️ ${stadVal}${cityVal ? ', ' + cityVal : ''}</span>` : ''}
 </div>` : ''}
-${hasScore && hasTeams && parseInt(scoreH) !== parseInt(scoreA)
+${hasScore && homeResolved && awayResolved && parseInt(scoreH) !== parseInt(scoreA)
 ? honorMatchHtml(
 parseInt(scoreH) > parseInt(scoreA) ? homeVal : awayVal,
 parseInt(scoreH) > parseInt(scoreA) ? awayVal : homeVal,
@@ -692,20 +613,20 @@ return;
 starredMatches.forEach(m => renderMatchCard(m, cont));
 }
 function applyFilters() {
-const selDate = $('filterDate') ? $('filterDate').value : '';
-const selCity = $('filterCity') ? $('filterCity').value : '';
+const selDate  = $('filterDate')  ? $('filterDate').value  : '';
+const selCity  = $('filterCity')  ? $('filterCity').value  : '';
 const selStade = $('filterStade') ? $('filterStade').value : '';
 const cards = document.querySelectorAll('#matchesContainer .match-card');
 cards.forEach(card => {
-const mid = parseInt(card.dataset.id);
-const m = MATCHES.find(x => x.id === mid);
+const mid   = parseInt(card.dataset.id);
+const m     = MATCHES.find(x => x.id === mid);
 const group = card.dataset.group;
-const text = card.dataset.text || '';
+const text  = card.dataset.text || '';
 const groupOk = currentGroup === 'all' || group === currentGroup;
 const searchOk = !currentSearch || text.includes(currentSearch.toLowerCase());
-const dateOk = !selDate || (m && m.date === selDate);
-const cityOk = !selCity || (m && m.city === selCity);
-const stadeOk = !selStade || (m && m.stadium === selStade);
+const dateOk  = !selDate  || (m && m.date     === selDate);
+const cityOk  = !selCity  || (m && m.city     === selCity);
+const stadeOk = !selStade || (m && m.stadium  === selStade);
 card.style.display = (groupOk && searchOk && dateOk && cityOk && stadeOk) ? '' : 'none';
 });
 document.querySelectorAll('#matchesContainer .phase-section').forEach(sec => {
@@ -806,14 +727,14 @@ approved.sort((a,b) => a[1].timestamp - b[1].timestamp);
 el.innerHTML = approved.map(([,c]) => `
 <div class="comment-item">
 <div class="comment-pseudo">${c.pseudo || 'Anonyme'}</div>
-<div class="comment-text">${c.text.replace(/</g,'<')}</div>
+<div class="comment-text">${c.text.replace(/</g,'&lt;')}</div>
 <div class="comment-time">${new Date(c.timestamp).toLocaleString('fr-FR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}</div>
 </div>`).join('');
 }
 function submitComment(matchId) {
-const textEl = $('ctext-' + matchId);
+const textEl   = $('ctext-'   + matchId);
 const pseudoEl = $('cpseudo-' + matchId);
-const text = textEl ? textEl.value.trim() : '';
+const text   = textEl   ? textEl.value.trim()   : '';
 const pseudo = pseudoEl ? pseudoEl.value.trim() : '';
 if (!text) { textEl && (textEl.style.borderColor='#e74c3c'); return; }
 if (window._fb) {
@@ -878,9 +799,9 @@ all.push({ matchId, commentId, ...c, matchLabel: m ? `${m.home} vs ${m.away}` : 
 });
 });
 all.sort((a,b) => b.timestamp - a.timestamp);
-const pending = all.filter(c => !c.approved);
+const pending  = all.filter(c => !c.approved);
 const approved = all.filter(c => c.approved);
-const display = [...pending, ...approved];
+const display  = [...pending, ...approved];
 if (!display.length) {
 cont.innerHTML = '<div class="admin-empty">Aucun commentaire pour l\'instant.</div>';
 return;
@@ -893,7 +814,7 @@ cont.innerHTML = display.map(c => `
 <span style="color:var(--group-c)">⚽ ${c.matchLabel}</span>
 <span class="${c.approved ? 'admin-badge-approved' : 'admin-badge-pending'}">${c.approved ? '✅ Approuvé' : '⏳ En attente'}</span>
 </div>
-<div class="admin-comment-text">${c.text.replace(/</g,'<')}</div>
+<div class="admin-comment-text">${c.text.replace(/</g,'&lt;')}</div>
 <div class="admin-comment-actions">
 ${!c.approved ? `<button class="btn-approve" onclick="fbApproveComment('${c.matchId}','${c.commentId}')">✅ Approuver</button>` : ''}
 <button class="btn-reject" onclick="fbDeleteComment('${c.matchId}','${c.commentId}')">🗑 Supprimer</button>
@@ -918,7 +839,7 @@ _pushNav({ sidebar: 'closed', view: view });
 showViewInternal(view, btn);
 }
 function showViewInternal(view, btn) {
-['calendar','groups','knockout','ranking','scorers','bestthirds','pronostics','ambassadors'].forEach(v => {
+['calendar','groups','knockout','starred','ranking','scorers','pronostics','ambassadors'].forEach(v => {
 const el = $('view-' + v);
 if (el) el.style.display = 'none';
 });
@@ -926,17 +847,17 @@ document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
 if (btn) btn.classList.add('active');
 const el = $('view-' + view);
 if (el) el.style.display = 'block';
-if (view === 'ranking') renderRanking();
-if (view === 'scorers') renderScorers();
-if (view === 'bestthirds') renderBestThirds();
-if (view === 'pronostics') renderPronostics();
-if (view === 'ambassadors') renderAmbassadors();
+if (view === 'starred')      renderStarred();
+if (view === 'ranking')      renderRanking();
+if (view === 'scorers')      renderScorers();
+if (view === 'pronostics')   renderPronostics();
+if (view === 'ambassadors')  renderAmbassadors();
 }
 const FONT_URLS = {
-"'Playfair Display', serif": 'https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=optional',
-"'Rajdhani', sans-serif": 'https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&display=optional',
+"'Playfair Display', serif":      'https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=optional',
+"'Rajdhani', sans-serif":         'https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&display=optional',
 "'Roboto Condensed', sans-serif": 'https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@400;700&display=optional',
-"'Space Grotesk', sans-serif": 'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&display=optional',
+"'Space Grotesk', sans-serif":    'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&display=optional',
 };
 const loadedFonts = new Set();
 function setFont(font) {
@@ -966,7 +887,7 @@ applyThemeLabels();
 saveState({ isDark });
 }
 function applyThemeLabels() {
-const icon = isDark ? '☀️' : '🌙';
+const icon  = isDark ? '☀️' : '🌙';
 const label = isDark ? 'Clair' : 'Sombre';
 ['themeIcon','themeIcon2'].forEach(id => { const el = $(id); if(el) el.textContent = icon; });
 ['themeLabel','themeLabel2'].forEach(id => { const el = $(id); if(el) el.textContent = label; });
@@ -987,10 +908,10 @@ const d = Math.floor(diff / 86400000);
 const h = Math.floor((diff % 86400000) / 3600000);
 const m = Math.floor((diff % 3600000) / 60000);
 const s = Math.floor((diff % 60000) / 1000);
-$('cd-days').textContent = String(d).padStart(2, '0');
+$('cd-days').textContent  = String(d).padStart(2, '0');
 $('cd-hours').textContent = String(h).padStart(2, '0');
-$('cd-mins').textContent = String(m).padStart(2, '0');
-$('cd-secs').textContent = String(s).padStart(2, '0');
+$('cd-mins').textContent  = String(m).padStart(2, '0');
+$('cd-secs').textContent  = String(s).padStart(2, '0');
 }
 let currentModalId = null;
 function openModal(matchId) {
@@ -1015,7 +936,6 @@ score.scorers.forEach(s => addScorerRow(s));
 $('modalOverlay').classList.add('open');
 $('mScoreHome').focus();
 }
-
 function closeModal() {
 $('modalOverlay').classList.remove('open');
 currentModalId = null;
@@ -1067,7 +987,6 @@ try { window.fbSaveScore(currentModalId, SCORES[currentModalId]); } catch(e) {}
 }
 // Propage les vainqueurs en phase finale (8es -> finale)
 try { if (typeof propagateKnockout === 'function') propagateKnockout(); } catch(e) {}
-try { if (typeof creditWinningPronos === 'function') creditWinningPronos(); } catch(e) {}
 const m = MATCHES.find(x => x.id === currentModalId);
 const oldCard = document.querySelector(`.match-card[data-id="${currentModalId}"]`);
 if (oldCard) {
@@ -1078,8 +997,9 @@ renderMatchCard(m, tmp);
 parent.appendChild(tmp.firstChild);
 applyFilters();
 }
-const _vbt = $('view-bestthirds');
-if (_vbt && _vbt.style.display !== 'none') renderBestThirds();
+if ($('view-starred').style.display !== 'none') {
+renderStarred();
+}
 renderHaitiMatches();
 // Rafraîchir classement, groupes et buteurs immédiatement
 try { if (typeof renderRanking === 'function') renderRanking(); } catch(e) {}
@@ -1108,34 +1028,33 @@ renderMatchCard(m, tmp);
 parent.appendChild(tmp.firstChild);
 applyFilters();
 }
-const _vbt2 = $('view-bestthirds');
-if (_vbt2 && _vbt2.style.display !== 'none') renderBestThirds();
+if ($('view-starred').style.display !== 'none') renderStarred();
 closeModal();
 }
 // TEAM_DATA — voir data.js
 const PALMARES = [
-{ year:2022, winner:'Argentine', winnerFlag:'🇦🇷', finalist:'France', finalistFlag:'🇫🇷', host:'Qatar', score:'3-3 a.p. (4-2 tab)' },
-{ year:2018, winner:'France', winnerFlag:'🇫🇷', finalist:'Croatie', finalistFlag:'🇭🇷', host:'Russie', score:'4-2' },
-{ year:2014, winner:'Allemagne', winnerFlag:'🇩🇪', finalist:'Argentine', finalistFlag:'🇦🇷', host:'Brésil', score:'1-0 a.p.' },
-{ year:2010, winner:'Espagne', winnerFlag:'🇪🇸', finalist:'Pays-Bas', finalistFlag:'🇳🇱', host:'Afrique du Sud', score:'1-0 a.p.' },
-{ year:2006, winner:'Italie', winnerFlag:'🇮🇹', finalist:'France', finalistFlag:'🇫🇷', host:'Allemagne', score:'1-1 a.p. (5-3 tab)' },
-{ year:2002, winner:'Brésil', winnerFlag:'🇧🇷', finalist:'Allemagne', finalistFlag:'🇩🇪', host:'Corée du S./Japon',score:'2-0' },
-{ year:1998, winner:'France', winnerFlag:'🇫🇷', finalist:'Brésil', finalistFlag:'🇧🇷', host:'France', score:'3-0' },
-{ year:1994, winner:'Brésil', winnerFlag:'🇧🇷', finalist:'Italie', finalistFlag:'🇮🇹', host:'États-Unis', score:'0-0 a.p. (3-2 tab)' },
-{ year:1990, winner:'Allemagne', winnerFlag:'🇩🇪', finalist:'Argentine', finalistFlag:'🇦🇷', host:'Italie', score:'1-0' },
-{ year:1986, winner:'Argentine', winnerFlag:'🇦🇷', finalist:'Allemagne', finalistFlag:'🇩🇪', host:'Mexique', score:'3-2' },
-{ year:1982, winner:'Italie', winnerFlag:'🇮🇹', finalist:'Allemagne', finalistFlag:'🇩🇪', host:'Espagne', score:'3-1' },
-{ year:1978, winner:'Argentine', winnerFlag:'🇦🇷', finalist:'Pays-Bas', finalistFlag:'🇳🇱', host:'Argentine', score:'3-1 a.p.' },
-{ year:1974, winner:'Allemagne', winnerFlag:'🇩🇪', finalist:'Pays-Bas', finalistFlag:'🇳🇱', host:'Allemagne', score:'2-1' },
-{ year:1970, winner:'Brésil', winnerFlag:'🇧🇷', finalist:'Italie', finalistFlag:'🇮🇹', host:'Mexique', score:'4-1' },
-{ year:1966, winner:'Angleterre', winnerFlag:'🏴󠁧󠁢󠁥󠁮󠁧󠁿', finalist:'Allemagne', finalistFlag:'🇩🇪', host:'Angleterre', score:'4-2 a.p.' },
-{ year:1962, winner:'Brésil', winnerFlag:'🇧🇷', finalist:'Tchécoslovaquie',finalistFlag:'🇨🇿', host:'Chili', score:'3-1' },
-{ year:1958, winner:'Brésil', winnerFlag:'🇧🇷', finalist:'Suède', finalistFlag:'🇸🇪', host:'Suède', score:'5-2' },
-{ year:1954, winner:'Allemagne', winnerFlag:'🇩🇪', finalist:'Hongrie', finalistFlag:'🇭🇺', host:'Suisse', score:'3-2' },
-{ year:1950, winner:'Uruguay', winnerFlag:'🇺🇾', finalist:'Brésil', finalistFlag:'🇧🇷', host:'Brésil', score:'2-1 *' },
-{ year:1938, winner:'Italie', winnerFlag:'🇮🇹', finalist:'Hongrie', finalistFlag:'🇭🇺', host:'France', score:'4-2' },
-{ year:1934, winner:'Italie', winnerFlag:'🇮🇹', finalist:'Tchécoslovaquie',finalistFlag:'🇨🇿', host:'Italie', score:'2-1 a.p.' },
-{ year:1930, winner:'Uruguay', winnerFlag:'🇺🇾', finalist:'Argentine', finalistFlag:'🇦🇷', host:'Uruguay', score:'4-2' },
+{ year:2022, winner:'Argentine',   winnerFlag:'🇦🇷', finalist:'France',         finalistFlag:'🇫🇷', host:'Qatar',            score:'3-3 a.p. (4-2 tab)' },
+{ year:2018, winner:'France',      winnerFlag:'🇫🇷', finalist:'Croatie',        finalistFlag:'🇭🇷', host:'Russie',           score:'4-2' },
+{ year:2014, winner:'Allemagne',   winnerFlag:'🇩🇪', finalist:'Argentine',      finalistFlag:'🇦🇷', host:'Brésil',           score:'1-0 a.p.' },
+{ year:2010, winner:'Espagne',     winnerFlag:'🇪🇸', finalist:'Pays-Bas',       finalistFlag:'🇳🇱', host:'Afrique du Sud',   score:'1-0 a.p.' },
+{ year:2006, winner:'Italie',      winnerFlag:'🇮🇹', finalist:'France',         finalistFlag:'🇫🇷', host:'Allemagne',        score:'1-1 a.p. (5-3 tab)' },
+{ year:2002, winner:'Brésil',      winnerFlag:'🇧🇷', finalist:'Allemagne',      finalistFlag:'🇩🇪', host:'Corée du S./Japon',score:'2-0' },
+{ year:1998, winner:'France',      winnerFlag:'🇫🇷', finalist:'Brésil',         finalistFlag:'🇧🇷', host:'France',           score:'3-0' },
+{ year:1994, winner:'Brésil',      winnerFlag:'🇧🇷', finalist:'Italie',         finalistFlag:'🇮🇹', host:'États-Unis',       score:'0-0 a.p. (3-2 tab)' },
+{ year:1990, winner:'Allemagne',   winnerFlag:'🇩🇪', finalist:'Argentine',      finalistFlag:'🇦🇷', host:'Italie',           score:'1-0' },
+{ year:1986, winner:'Argentine',   winnerFlag:'🇦🇷', finalist:'Allemagne',      finalistFlag:'🇩🇪', host:'Mexique',          score:'3-2' },
+{ year:1982, winner:'Italie',      winnerFlag:'🇮🇹', finalist:'Allemagne',      finalistFlag:'🇩🇪', host:'Espagne',          score:'3-1' },
+{ year:1978, winner:'Argentine',   winnerFlag:'🇦🇷', finalist:'Pays-Bas',       finalistFlag:'🇳🇱', host:'Argentine',        score:'3-1 a.p.' },
+{ year:1974, winner:'Allemagne',   winnerFlag:'🇩🇪', finalist:'Pays-Bas',       finalistFlag:'🇳🇱', host:'Allemagne',        score:'2-1' },
+{ year:1970, winner:'Brésil',      winnerFlag:'🇧🇷', finalist:'Italie',         finalistFlag:'🇮🇹', host:'Mexique',          score:'4-1' },
+{ year:1966, winner:'Angleterre',  winnerFlag:'🏴󠁧󠁢󠁥󠁮󠁧󠁿', finalist:'Allemagne',      finalistFlag:'🇩🇪', host:'Angleterre',       score:'4-2 a.p.' },
+{ year:1962, winner:'Brésil',      winnerFlag:'🇧🇷', finalist:'Tchécoslovaquie',finalistFlag:'🇨🇿', host:'Chili',            score:'3-1' },
+{ year:1958, winner:'Brésil',      winnerFlag:'🇧🇷', finalist:'Suède',          finalistFlag:'🇸🇪', host:'Suède',            score:'5-2' },
+{ year:1954, winner:'Allemagne',   winnerFlag:'🇩🇪', finalist:'Hongrie',        finalistFlag:'🇭🇺', host:'Suisse',           score:'3-2' },
+{ year:1950, winner:'Uruguay',     winnerFlag:'🇺🇾', finalist:'Brésil',         finalistFlag:'🇧🇷', host:'Brésil',           score:'2-1 *' },
+{ year:1938, winner:'Italie',      winnerFlag:'🇮🇹', finalist:'Hongrie',        finalistFlag:'🇭🇺', host:'France',           score:'4-2' },
+{ year:1934, winner:'Italie',      winnerFlag:'🇮🇹', finalist:'Tchécoslovaquie',finalistFlag:'🇨🇿', host:'Italie',           score:'2-1 a.p.' },
+{ year:1930, winner:'Uruguay',     winnerFlag:'🇺🇾', finalist:'Argentine',      finalistFlag:'🇦🇷', host:'Uruguay',          score:'4-2' },
 ];
 function openSidebar() {
 $('sidebar').classList.add('open');
@@ -1312,8 +1231,8 @@ document.querySelectorAll('.sidebar-section').forEach(s => s.classList.remove('a
 const sec = document.getElementById('section-equipes');
 if (sec) sec.classList.add('active');
 const fiche = document.getElementById('teamFiche');
-const list = document.getElementById('teamsListView');
-if (list) list.style.display = 'none';
+const list  = document.getElementById('teamsListView');
+if (list)  list.style.display  = 'none';
 if (fiche) fiche.style.display = '';
 showTeamFiche(teamName, group);
 }, 200);
@@ -1416,16 +1335,15 @@ const found = r.matches.find(m => m.id === matchId);
 if (found) { matchDef = found; break; }
 }
 if (!matchDef) return;
-
 const saved = KO_STATE[matchId] || {};
 $('koModalTitle').textContent = (round ? round.round + ' · ' : '') + matchDef.label;
-$('koHome').value = saved.home || matchDef.home || '';
-$('koAway').value = saved.away || matchDef.away || '';
-$('koTime').value = saved.time || matchDef.time || '';
+$('koHome').value    = saved.home    || matchDef.home    || '';
+$('koAway').value    = saved.away    || matchDef.away    || '';
+$('koTime').value    = saved.time    || matchDef.time    || '';
 $('koStadium').value = saved.stadium || matchDef.stadium || '';
-$('koCity').value = saved.city || matchDef.city || '';
-$('koScoreH').value = saved.scoreH !== undefined ? saved.scoreH : '';
-$('koScoreA').value = saved.scoreA !== undefined ? saved.scoreA : '';
+$('koCity').value    = saved.city    || matchDef.city    || '';
+$('koScoreH').value  = saved.scoreH !== undefined ? saved.scoreH : '';
+$('koScoreA').value  = saved.scoreA !== undefined ? saved.scoreA : '';
 const hName = saved.home || matchDef.home || 'DOM.';
 const aName = saved.away || matchDef.away || 'EXT.';
 $('koScoreHLbl').textContent = hName.substring(0,6).toUpperCase();
@@ -1436,37 +1354,8 @@ $('koScoreHLbl').textContent = (this.value || 'DOM.').substring(0,6).toUpperCase
 $('koAway').oninput = function() {
 $('koScoreALbl').textContent = (this.value || 'EXT.').substring(0,6).toUpperCase();
 };
-// Remplir la liste des buteurs
-const koList = $('koScorersList');
-if (koList) {
-koList.innerHTML = '';
-if (saved.scorers && saved.scorers.length) {
-saved.scorers.forEach(s => addKOScorerRow(s));
-}
-}
 $('koModalOverlay').classList.add('open');
 $('koHome').focus();
-}
-// Ajoute une ligne de saisie de buteur dans le modal KO
-function addKOScorerRow(data) {
-const list = $('koScorersList');
-if (!list) return;
-const home = $('koHome').value || 'Domicile';
-const away = $('koAway').value || 'Extérieur';
-const row = document.createElement('div');
-row.className = 'scorer-row';
-row.style.cssText = 'display:flex;gap:6px;margin-bottom:6px;align-items:center;';
-row.innerHTML = `
-<select class="scorer-select" style="flex:1;">
-<option value="">-- Équipe --</option>
-<option value="${home}" ${data && data.team === home ? 'selected' : ''}>${getFlag(home)} ${home}</option>
-<option value="${away}" ${data && data.team === away ? 'selected' : ''}>${getFlag(away)} ${away}</option>
-</select>
-<input class="scorer-min" type="text" placeholder="Nom" style="flex:2;width:auto;" value="${data ? (data.name||'') : ''}">
-<input class="scorer-min" type="number" placeholder="min" min="1" max="120" style="width:60px;" value="${data ? (data.minute||'') : ''}">
-<button class="scorer-del" type="button" onclick="this.closest('.scorer-row').remove()" style="background:none;border:none;color:#e74c3c;font-size:18px;cursor:pointer;">×</button>
-`;
-list.appendChild(row);
 }
 function closeKOModal() {
 $('koModalOverlay').classList.remove('open');
@@ -1474,49 +1363,23 @@ currentKOId = null;
 }
 function saveKOMatch() {
 if (!currentKOId) return;
-// Collecter les buteurs
-const scorers = [];
-document.querySelectorAll('#koScorersList .scorer-row').forEach(row => {
-const sel = row.querySelector('select');
-const inputs = row.querySelectorAll('input');
-const team = sel ? sel.value : '';
-const name = inputs[0] ? inputs[0].value.trim() : '';
-const minute = inputs[1] ? inputs[1].value.trim() : '';
-if (name) scorers.push({ team, name, minute });
-});
-const prev = KO_STATE[currentKOId] || {};
 KO_STATE[currentKOId] = {
-...prev,
-home: $('koHome').value.trim(),
-away: $('koAway').value.trim(),
-time: $('koTime').value.trim(),
+home:    $('koHome').value.trim(),
+away:    $('koAway').value.trim(),
+time:    $('koTime').value.trim(),
 stadium: $('koStadium').value.trim(),
-city: $('koCity').value.trim(),
-scoreH: $('koScoreH').value,
-scoreA: $('koScoreA').value,
-scorers,
+city:    $('koCity').value.trim(),
+scoreH:  $('koScoreH').value,
+scoreA:  $('koScoreA').value,
 };
 saveState({ ko: KO_STATE });
-// Publier sur Firebase si dispo (pour tous les visiteurs)
-if (window.fbSaveKO) {
-try { window.fbSaveKO(currentKOId, KO_STATE[currentKOId]); } catch(e) {}
-}
-resolveBracketTeams();
 renderBracket();
-const sc = $('view-scorers');
-if (sc && sc.style.display !== 'none') renderScorers();
 closeKOModal();
 }
 function clearKOMatch() {
 if (!currentKOId) return;
-const idToClear = currentKOId;
-delete KO_STATE[idToClear];
+delete KO_STATE[currentKOId];
 saveState({ ko: KO_STATE });
-// Publier la suppression sur Firebase (pour tous)
-if (window.fbSaveKO) {
-try { window.fbSaveKO(idToClear, null); } catch(e) {}
-}
-resolveBracketTeams();
 renderBracket();
 closeKOModal();
 }
@@ -1576,48 +1439,6 @@ ${standings.some(s => s.j > 0) ? standings[0].j + ' / 3 journées jouées' : 'Pa
 cont.appendChild(block);
 });
 }
-// Classement provisoire des meilleurs 3es (règle FIFA : points, diff, buts)
-function renderBestThirds() {
-const cont = $('bestThirdsContent');
-if (!cont) return;
-const groups = ['A','B','C','D','E','F','G','H','I','J','K','L'];
-const thirds = [];
-groups.forEach(letter => {
-if (!GROUPS_DATA[letter]) return;
-const st = computeStandings(letter);
-if (st && st.length >= 3) {
-const t = st[2];
-thirds.push({ name:t.name, group:letter, j:t.j, pts:t.pts, bp:t.bp, bc:t.bc, diff:t.bp-t.bc });
-}
-});
-thirds.sort((a,b) => (b.pts-a.pts) || (b.diff-a.diff) || (b.bp-a.bp));
-if (!thirds.length) {
-cont.innerHTML = '<div style="color:var(--text2);font-family:var(--font-ui);font-size:13px;padding:30px;text-align:center;">📊 Classement disponible une fois les groupes joués.</div>';
-return;
-}
-const rows = thirds.map((t,i) => {
-const diffStr = t.diff>0 ? '<span style="color:#1db954">+'+t.diff+'</span>' : t.diff<0 ? '<span style="color:#e74c3c">'+t.diff+'</span>' : '<span style="color:var(--text2)">0</span>';
-const isHaiti = t.name==='Haïti';
-const bg = i<8 ? 'rgba(29,185,84,0.08)' : 'rgba(231,76,60,0.06)';
-const posColor = i<8 ? '#1db954' : '#e74c3c';
-return '<tr style="background:'+bg+'">'
-+'<td style="text-align:center;font-weight:700;color:'+posColor+'">'+(i+1)+'</td>'
-+'<td><span style="font-size:18px">'+getFlag(t.name)+'</span> '
-+'<span'+(isHaiti?' style="color:#d4213d;font-weight:700"':'')+'>'+t.name+'</span> '
-+'<span style="font-size:10px;color:var(--text2)">(Gr. '+t.group+')</span></td>'
-+'<td style="text-align:center">'+t.j+'</td>'
-+'<td style="text-align:center">'+diffStr+'</td>'
-+'<td style="text-align:center;font-weight:700">'+t.pts+'</td></tr>';
-}).join('');
-cont.innerHTML =
-'<div style="padding:10px 14px;font-family:var(--font-ui);font-size:12px;color:var(--text2);line-height:1.5">'
-+'Classement provisoire des 3es de chaque groupe.<br>'
-+'Les <span style="color:#1db954;font-weight:700">8 meilleurs (vert)</span> se qualifient pour les 16es de finale.'
-+'</div>'
-+'<table class="ranking-table" style="width:100%"><thead><tr>'
-+'<th>#</th><th>Équipe</th><th title="Matchs joués">MJ</th><th title="Différence">Diff</th><th title="Points">Pts</th>'
-+'</tr></thead><tbody>'+rows+'</tbody></table>';
-}
 function renderScorers() {
 const cont = $('scorersContent');
 if (!cont) return;
@@ -1635,19 +1456,6 @@ team: scorer.team || '—',
 goals: 0,
 minutes: []
 };
-}
-scorerMap[key].goals++;
-if (scorer.minute) scorerMap[key].minutes.push(scorer.minute + "'");
-});
-});
-// Inclure aussi les buteurs des matchs de phase finale (KO_STATE)
-Object.values(KO_STATE).forEach(ko => {
-if (!ko || !ko.scorers || !ko.scorers.length) return;
-ko.scorers.forEach(scorer => {
-if (!scorer.name || !scorer.name.trim()) return;
-const key = scorer.name.trim().toLowerCase() + '|' + (scorer.team || '');
-if (!scorerMap[key]) {
-scorerMap[key] = { name: scorer.name.trim(), team: scorer.team || '—', goals: 0, minutes: [] };
 }
 scorerMap[key].goals++;
 if (scorer.minute) scorerMap[key].minutes.push(scorer.minute + "'");
@@ -1741,21 +1549,16 @@ window._fb.set(userRef, { pseudo, pronos: PRONOS, updated: Date.now() });
 }
 function showPronoTab(tab) {
 document.getElementById('prono-view-predictions').style.display = tab === 'predictions' ? '' : 'none';
-document.getElementById('prono-view-ranking').style.display = tab === 'ranking' ? '' : 'none';
-document.getElementById('prono-tab-pred').className = tab === 'predictions' ? 'comment-submit-btn' : 'filter-reset-btn';
-document.getElementById('prono-tab-rank').className = tab === 'ranking' ? 'comment-submit-btn' : 'filter-reset-btn';
+document.getElementById('prono-view-ranking').style.display     = tab === 'ranking'     ? '' : 'none';
+document.getElementById('prono-tab-pred').className  = tab === 'predictions' ? 'comment-submit-btn' : 'filter-reset-btn';
+document.getElementById('prono-tab-rank').className  = tab === 'ranking'     ? 'comment-submit-btn' : 'filter-reset-btn';
 if (tab === 'ranking') renderPronoRanking();
 }
 function renderPronostics() {
 const grid = document.getElementById('pronoGrid');
 if (!grid) return;
 grid.innerHTML = '';
-const upcoming = MATCHES.filter(m => m.group && !isPassee(m.date));
-if (!upcoming.length) {
-grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px 20px;font-family:var(--font-ui);color:var(--text2);font-size:14px;">⚽ Aucun match de groupe à venir.<br><span style="font-size:12px;">Les pronostics reviendront avec les prochains matchs !</span></div>';
-return;
-}
-upcoming.forEach(m => {
+MATCHES.filter(m => m.group).forEach(m => {
 const p = PRONOS[m.id];
 const isDone = p && p.home !== undefined && p.away !== undefined;
 const card = document.createElement('div');
@@ -1782,7 +1585,7 @@ card.innerHTML = `
 </div>
 ${isDone
 ? `<div class="prono-done-badge">✅ Pronostic enregistré : ${p.home} – ${p.away}</div>`
-: `<button class="prono-save-btn" onclick="saveProno(${m.id})">💾 Enregistrer (+3 pts)</button>`
+: `<button class="prono-save-btn" onclick="saveProno(${m.id})">💾 Enregistrer mon pronostic</button>`
 }
 `;
 grid.appendChild(card);
@@ -1799,45 +1602,20 @@ hEl.style.borderColor = '#e74c3c';
 aEl.style.borderColor = '#e74c3c';
 return;
 }
-const isNew = !PRONOS[matchId];
 PRONOS[matchId] = { home: h, away: a, timestamp: Date.now() };
 savePronos();
-if (isNew && typeof addPoints === 'function') addPoints(3, 'Pronostic enregistré 🎯');
 renderPronostics(); // refresh
 }
 function calcPronoPoints(prono, score) {
 if (!prono || prono.home === undefined || !score || score.home === undefined) return 0;
 const ph = parseInt(prono.home), pa = parseInt(prono.away);
-const sh = parseInt(score.home), sa = parseInt(score.away);
+const sh = parseInt(score.home),  sa = parseInt(score.away);
 if (isNaN(ph)||isNaN(pa)||isNaN(sh)||isNaN(sa)) return 0;
 if (ph === sh && pa === sa) return 5; // score exact
 const pronoWin = ph > pa ? 'H' : pa > ph ? 'A' : 'N';
-const realWin = sh > sa ? 'H' : sa > sh ? 'A' : 'N';
+const realWin  = sh > sa ? 'H' : sa > sh ? 'A' : 'N';
 if (pronoWin === realWin) return 3; // bon résultat
 return 0;
-}
-// Crédite les points Ambassadeur pour les pronos gagnants (une seule fois).
-function creditWinningPronos() {
-if (typeof _user === 'undefined' || !_user) return;
-let total = 0, exact = 0;
-Object.entries(PRONOS).forEach(([mid, p]) => {
-if (!p || p.credited) return;
-const s = SCORES[parseInt(mid)];
-if (!s || s.home === '' || s.home === null || s.home === undefined) return;
-if (isNaN(parseInt(s.home)) || isNaN(parseInt(s.away))) return;
-const pts = calcPronoPoints(p, s);
-if (pts > 0) { total += pts; if (pts === 5) exact++; }
-p.credited = true;
-});
-if (total > 0) {
-_user.points = (_user.points || 0) + total;
-saveUser();
-if (typeof updateUserBadge === 'function') updateUserBadge();
-let msg = '🎯 +' + total + ' pts pronostics';
-if (exact) msg += ' (' + exact + ' exact' + (exact>1?'s':'') + ' !)';
-showPointsToast(msg);
-savePronos();
-}
 }
 function renderPronoRanking() {
 const cont = document.getElementById('pronoRankingContent');
@@ -2234,7 +2012,6 @@ if (lower.includes(word)) return false;
 }
 return true;
 }
-
 function countFlags(matchId, commentId) {
 const key = `_flags_${matchId}_${commentId}`;
 const flags = JSON.parse(localStorage.getItem(key) || '[]');
@@ -2247,18 +2024,15 @@ const flags = JSON.parse(localStorage.getItem(key) || '[]');
 if (flags.includes(uid)) return; // déjà signalé
 flags.push(uid);
 localStorage.setItem(key, JSON.stringify(flags));
-
 if (window._fb) {
 window._fb.set(
 window._fb.ref(window._fb.db, `flags/${matchId}/${commentId}/${uid}`),
 true
 );
 }
-
 if (flags.length >= 3) {
 autoHideComment(matchId, commentId);
 }
-
 showPointsToast('Signalement enregistré 🚩');
 }
 function autoHideComment(matchId, commentId) {
@@ -2345,7 +2119,6 @@ try { window.fbSaveScore(matchId, SCORES[matchId]); } catch(e) {}
 }
 // Propage les vainqueurs en phase finale (8es -> finale)
 try { if (typeof propagateKnockout === 'function') propagateKnockout(); } catch(e) {}
-try { if (typeof creditWinningPronos === 'function') creditWinningPronos(); } catch(e) {}
 const vsDisplay = document.getElementById('vs-display-' + matchId);
 if (vsDisplay) {
 vsDisplay.className = 'score-btn-current';
@@ -2368,8 +2141,8 @@ try { if (typeof renderGroups === 'function') renderGroups(); } catch(e) {}
 try { if (typeof renderScorers === 'function') renderScorers(); } catch(e) {}
 }
 const RAPIDAPI_KEY = 'b54773ac56msheedcadcc3491eaep1b4037jsnd742271224e0';
-const WC_LEAGUE_ID = 1; // FIFA World Cup
-const WC_SEASON = 2026;
+const WC_LEAGUE_ID = 1;     // FIFA World Cup
+const WC_SEASON    = 2026;
 const API_TEAM_MAP = {
 'Mexico': 'Mexique',
 'South Africa': 'Afrique du Sud',
@@ -2443,7 +2216,6 @@ if (data.response && data.response.length > 0) {
 processApiFixtures(data.response);
 }
 } catch(e) {
-
 }
 }
 async function fetchTodayScores() {
@@ -2459,10 +2231,8 @@ headers: {
 const data = await res.json();
 if (data.response && data.response.length > 0) {
 processApiFixtures(data.response);
-
 }
 } catch(e) {
-
 }
 }
 function processApiFixtures(fixtures) {
@@ -2512,9 +2282,8 @@ card.insertBefore(badge, card.firstChild);
 function initAutoScores() {
 const now = new Date();
 const wcStart = new Date('2026-06-11');
-const wcEnd = new Date('2026-07-20');
+const wcEnd   = new Date('2026-07-20');
 if (now < wcStart || now > wcEnd) {
-
 return;
 }
 fetchTodayScores();
@@ -2524,15 +2293,15 @@ fetchTodayScores();
 }, 180000);
 }
 window.renderAdminComments = renderAdminComments;
-window.renderCommentsList = renderCommentsList;
-window.fbApproveComment = function(mid, cid) { if(window._fb) window._fb.update(window._fb.ref(window._fb.db,'comments/'+mid+'/'+cid),{approved:true}); addPoints(5, 'Commentaire approuvé'); };
-window.fbDeleteComment = function(mid, cid) { if(window._fb) window._fb.remove(window._fb.ref(window._fb.db,'comments/'+mid+'/'+cid)); };
+window.renderCommentsList  = renderCommentsList;
+window.fbApproveComment    = function(mid, cid) { if(window._fb) window._fb.update(window._fb.ref(window._fb.db,'comments/'+mid+'/'+cid),{approved:true}); addPoints(5, 'Commentaire approuvé'); };
+window.fbDeleteComment     = function(mid, cid) { if(window._fb) window._fb.remove(window._fb.ref(window._fb.db,'comments/'+mid+'/'+cid)); };
 function initExtraFilters() {
-const dates = [...new Set(MATCHES.map(m => m.date))];
+const dates  = [...new Set(MATCHES.map(m => m.date))];
 const cities = [...new Set(MATCHES.map(m => m.city))].sort();
 const stades = [...new Set(MATCHES.map(m => m.stadium))].sort();
-const selDate = $('filterDate');
-const selCity = $('filterCity');
+const selDate  = $('filterDate');
+const selCity  = $('filterCity');
 const selStade = $('filterStade');
 if (!selDate || !selCity || !selStade) return;
 dates.forEach(d => {
@@ -2553,8 +2322,8 @@ selStade.appendChild(o);
 }
 function applyExtraFilters() { applyFilters(); }
 function resetExtraFilters() {
-if ($('filterDate')) $('filterDate').value = '';
-if ($('filterCity')) $('filterCity').value = '';
+if ($('filterDate'))  $('filterDate').value  = '';
+if ($('filterCity'))  $('filterCity').value  = '';
 if ($('filterStade')) $('filterStade').value = '';
 applyFilters();
 }
@@ -2582,11 +2351,11 @@ btn.title = on ? 'Désactiver thème ELMECO' : 'Thème ELMECO';
 const banner = $('elmecoThemeBanner');
 if (banner) banner.classList.toggle('visible', on);
 if (on) {
-document.documentElement.style.setProperty('--accent', '#e08040');
+document.documentElement.style.setProperty('--accent',  '#e08040');
 document.documentElement.style.setProperty('--accent2', '#604020');
 } else {
 const s = loadState();
-document.documentElement.style.setProperty('--accent', s.accent || '#e8b923');
+document.documentElement.style.setProperty('--accent',  s.accent  || '#e8b923');
 document.documentElement.style.setProperty('--accent2', s.accent2 || '#ff6b35');
 }
 }
@@ -2701,8 +2470,52 @@ if (group) btn.style.borderColor = GROUP_COLORS[group];
 // ── Propagation automatique des vainqueurs en phase finale (8es -> finale) ──
 // Quand un match KO a un score, on remplace W{id} / L{id} dans les matchs suivants.
 function propagateKnockout() {
-// Délègue au système unifié (KNOCKOUT_ROUNDS + table officielle + cascade)
-try { return resolveBracketTeams(); } catch(e) { return false; }
+if (typeof MATCHES === 'undefined') return;
+let changed = false;
+// Pour chaque match de phase finale terminé, calculer vainqueur/perdant
+const winners = {}; // numéro -> nom équipe
+const losers = {};
+MATCHES.forEach(m => {
+if (!['F16','F8','QF','SF','TP','FIN'].includes(m.group)) return;
+const s = SCORES[m.id];
+if (!s || s.home === '' || s.home === null || s.home === undefined) return;
+const h = parseInt(s.home), a = parseInt(s.away);
+if (isNaN(h) || isNaN(a)) return;
+// Ne pas propager si les équipes sont encore des placeholders
+const homeIsPlaceholder = /^[WL]?\d/.test(m.home) || m.home.includes('/') || /^[12]/.test(m.home) || /^[GH][12]/.test(m.home);
+const awayIsPlaceholder = /^[WL]?\d/.test(m.away) || m.away.includes('/') || /^[12]/.test(m.away) || /^[GH][12]/.test(m.away);
+let winner = null, loser = null;
+if (h > a) { winner = m.home; loser = m.away; }
+else if (h < a) { winner = m.away; loser = m.home; }
+else {
+// Égalité : vainqueur déterminé par tirs au but (champ s.pen: 'home'|'away')
+if (s.pen === 'home') { winner = m.home; loser = m.away; }
+else if (s.pen === 'away') { winner = m.away; loser = m.home; }
+else return; // pas de vainqueur défini, on ne propage pas
+}
+// N'enregistrer que si le vainqueur n'est pas lui-même un placeholder non résolu
+if (winner && !winner.includes('/') && !/^[WL]\d/.test(winner)) {
+winners[m.id] = winner;
+losers[m.id] = loser;
+}
+});
+// Remplacer les placeholders W{id} et L{id} dans les matchs suivants
+MATCHES.forEach(m => {
+if (!['F8','QF','SF','TP','FIN'].includes(m.group)) return;
+['home','away'].forEach(side => {
+const val = m[side];
+const wMatch = /^W(\d+)$/.exec(val);
+const lMatch = /^L(\d+)$/.exec(val);
+if (wMatch && winners[parseInt(wMatch[1])]) {
+m[side] = winners[parseInt(wMatch[1])];
+changed = true;
+} else if (lMatch && losers[parseInt(lMatch[1])]) {
+m[side] = losers[parseInt(lMatch[1])];
+changed = true;
+}
+});
+});
+return changed;
 }
 // ── Application des scores reçus de Firebase (pour TOUS les visiteurs) ──
 window._applyFbScores = function(fbScores) {
@@ -2721,7 +2534,6 @@ mvp: scoreObj.mvp || null
 });
 // Propager les vainqueurs en phase finale (8es -> finale)
 try { propagateKnockout(); } catch(e) {}
-try { if (typeof creditWinningPronos === 'function') creditWinningPronos(); } catch(e) {}
 // Rafraîchit l'affichage des cartes visibles
 try {
 document.querySelectorAll('.match-card[data-id]').forEach(card => {
@@ -2741,30 +2553,7 @@ try { if (typeof renderRanking === 'function') renderRanking(); } catch(e) {}
 try { if (typeof renderGroups === 'function') renderGroups(); } catch(e) {}
 try { if (typeof renderScorers === 'function') renderScorers(); } catch(e) {}
 };
-// ── Réception du bracket (phase finale) depuis Firebase, pour TOUS ──
-window._applyFbKO = function(fbKO) {
-if (!fbKO) return;
-// Fusionne les données KO de Firebase dans KO_STATE local
-Object.entries(fbKO).forEach(([koId, koObj]) => {
-if (koObj && typeof koObj === 'object') {
-KO_STATE[koId] = { ...(KO_STATE[koId] || {}), ...koObj };
-}
-});
-// Sauvegarde locale + propagation en cascade des vainqueurs
-try { saveState({ ko: KO_STATE }); } catch(e) {}
-try { resolveBracketTeams(); } catch(e) {}
-// Rafraîchit le bracket si visible
-try {
-const vk = $('view-knockout');
-if (vk && vk.style.display !== 'none') renderBracket();
-else renderBracket(); // re-render silencieux pour garder l'état à jour
-} catch(e) {}
-// Rafraîchit le classement des buteurs (les buteurs KO comptent désormais)
-try {
-const vs = $('view-scorers');
-if (vs && vs.style.display !== 'none') renderScorers();
-} catch(e) {}
-};
+// ── Accès admin secret : triple clic sur le ballon ⚽ ──────────────────
 (function() {
 let _clicks = 0, _timer = null;
 document.addEventListener('DOMContentLoaded', function() {
