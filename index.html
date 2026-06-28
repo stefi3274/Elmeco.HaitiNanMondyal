@@ -437,11 +437,11 @@
       <button class="btn-haiti-theme" id="btnInstall" onclick="installApp()" title="Installer l'application" style="display:none;font-size:18px;padding:7px 10px;">⬇️</button>
     </div>
     <!-- CENTRE : Logo -->
-    <div class="logo" style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;text-align:center;min-width:0;">
-      <div class="logo-icon" id="secretAdminTrigger" style="font-size:24px;flex-shrink:0;">⚽</div>
-      <div style="min-width:0;">
-        <div class="logo-text" style="font-family:var(--font-display,sans-serif);font-size:16px;font-weight:700;letter-spacing:1px;color:var(--accent);line-height:1.1;white-space:nowrap;">AYITI nan Mondyal</div>
-        <div class="logo-sub" style="font-size:9px;color:var(--text2);line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">11 Juin — 19 Juillet · USA · Canada · Mexique</div>
+    <div class="logo" style="flex:1;justify-content:center;text-align:center;">
+      <div class="logo-icon" id="secretAdminTrigger">⚽</div>
+      <div>
+        <div class="logo-text">AYITI nan Mondyal</div>
+        <div class="logo-sub">11 Juin — 19 Juillet · USA · Canada · Mexique</div>
       </div>
     </div>
     <!-- DROITE : Réglages -->
@@ -832,6 +832,7 @@
     <button class="tab" onclick="showView('bestthirds', this)">🥉 Meilleurs 3es</button>
     <button class="tab" onclick="showView('pronostics', this)">🎯 Pronostics</button>
     <button class="tab" onclick="showView('ambassadors', this)">🏆 Ambassadeurs</button>
+    <button class="tab" onclick="showView('starred', this)">⭐ Favoris</button>
   </div>
   <!-- CALENDAR VIEW -->
   <div id="view-calendar">
@@ -878,18 +879,25 @@
       <div style="font-family:var(--font-body);font-size:14px;color:var(--text2);margin-bottom:20px;">
         La phase à élimination directe débute le <strong style="color:var(--accent)">28 juin 2026</strong> avec les 32es de finale (M73–M88), jusqu'à la Grande Finale le <strong style="color:var(--accent)">19 juillet</strong> au MetLife Stadium, New York.
       </div>
+      <button onclick="autoFillBracket()" style="margin:10px auto;display:block;padding:10px 20px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer;">⚡ Remplir le bracket automatiquement</button>
       <div id="bracketContent"></div>
+    </div>
+  </div>
+  <!-- STARRED VIEW -->
+  <div id="view-starred">
+    <div style="font-family:var(--font-ui);font-size:13px;color:var(--text2);margin-bottom:16px;">
+      Marquez des matchs avec ⭐ pour les retrouver ici.
+    </div>
+    <div class="matches-grid" id="starredContainer">
+      <div style="color:var(--text2);font-family:var(--font-ui);font-size:13px;grid-column:1/-1;padding:40px;text-align:center;border:2px dashed var(--border);border-radius:12px;">
+        Aucun match favori pour l'instant.<br>Cliquez sur ⭐ sur un match pour l'ajouter ici.
+      </div>
     </div>
   </div>
   <!-- PRONOSTICS VIEW -->
   <div id="view-pronostics" style="display:none;">
-    <div style="background:linear-gradient(135deg,rgba(232,185,35,0.15),rgba(212,33,61,0.1));border:1px solid rgba(232,185,35,0.3);border-radius:12px;padding:14px;margin-bottom:16px;font-family:var(--font-ui);">
-      <div style="font-size:14px;font-weight:700;color:var(--accent);margin-bottom:6px;">🎯 Pronostique et deviens Ambassadeur !</div>
-      <div style="font-size:12px;color:var(--text2);line-height:1.7;">
-        Chaque pronostic enregistré → <b style="color:var(--text)">+3 pts</b> direct.<br>
-        Bon résultat → <b style="color:#1db954">+3 pts</b> · Score exact → <b style="color:#1db954">+5 pts</b> 🔥<br>
-        <span style="font-size:11px;">Tes points te font grimper au classement <b>🏆 Ambassadeurs ELMECO</b>.</span>
-      </div>
+    <div style="font-family:var(--font-ui);font-size:13px;color:var(--text2);margin-bottom:16px;">
+      Préds le score avant chaque match. 3 pts pour le bon résultat, 5 pts si le score exact !
     </div>
     <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
       <button onclick="showPronoTab('predictions')" id="prono-tab-pred" class="comment-submit-btn" style="flex:1;min-width:120px;">🎯 Mes Pronostics</button>
@@ -1074,100 +1082,3 @@
 </div>
 </body>
 </html>
-------------------
-manifest
-{
-  "name": "AYITI nan Mondyal 2026",
-  "short_name": "Bouyon Boul",
-  "description": "Calendrier interactif de la Coupe du Monde 2026 — Une courtoisie de ELMECO",
-  "start_url": "./index.html",
-  "display": "standalone",
-  "background_color": "#0a0e1a",
-  "theme_color": "#e8b923",
-  "orientation": "portrait",
-  "lang": "fr",
-  "icons": [
-    {
-      "src": "favicon.png",
-      "sizes": "32x32",
-      "type": "image/png"
-    },
-    {
-      "src": "favicon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
-    }
-  ]
-}
-----------------------------------
-replace
-const fs = require('fs');
-const path = require('path');
-const htmlFile = 'index.html';
-const imgDir = '.'; // images dans le même dossier
-let html = fs.readFileSync(htmlFile, 'utf8');
-let count = 0;
-const regex = /src="data:image\/(jpeg|png|jpg|gif|webp);base64,([A-Za-z0-9+/=]+)"/g;
-html = html.replace(regex, (match, ext, b64) => {
-  const filename = `img_extracted_${String(count).padStart(2, '0')}.jpg`;
-  const filepath = path.join(imgDir, filename);
-  // Écrit le fichier image
-  const buffer = Buffer.from(b64, 'base64');
-  fs.writeFileSync(filepath, buffer);
-  console.log(`✅ Extrait : ${filename} (${(buffer.length / 1024).toFixed(0)} KB)`);
-  count++;
-  return `src="${filename}"`;
-});
-// Remplace aussi les balises <img ... src="data:..."> dans les attributs alt/autres
-fs.writeFileSync(htmlFile, html, 'utf8');
-console.log(`\n✅ Terminé — ${count} images extraites et index.html mis à jour.`);
---------------------------------------------
-sw
-// ── Service Worker AYITI nan Mondyal 2026 ──
-// Incrémente CACHE_VERSION à chaque déploiement pour invalider le cache
-const CACHE_VERSION = 'v20260628-020';
-const CACHE_NAME = `ayiti-mondyal-${CACHE_VERSION}`;
-const ASSETS = [
-  './',
-  './index.html',
-  './app.js',
-  './data.js',
-  './style.css',
-  './favicon.png',
-  './favicon-192.png',
-  './og-image.jpg',
-];
-// Installation : mise en cache des assets
-self.addEventListener('install', event => {
-  self.skipWaiting(); // ← force l'activation immédiate (pas d'attente)
-  event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS)).catch(() => {})
-  );
-});
-// Activation : supprime les anciens caches
-self.addEventListener('activate', event => {
-  event.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(
-        keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))
-      )
-    ).then(() => self.clients.claim()) // ← prend le contrôle immédiatement
-  );
-});
-// Fetch : réseau d'abord, cache en fallback (network-first)
-// → toujours la version la plus récente si en ligne
-self.addEventListener('fetch', event => {
-  event.respondWith(
-    fetch(event.request)
-      .then(response => {
-        // Met à jour le cache avec la version fraîche
-        if (response && response.status === 200) {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
-        }
-        return response;
-      })
-      .catch(() => caches.match(event.request)) // fallback cache si hors ligne
-  );
-});

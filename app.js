@@ -1,21 +1,3 @@
-// Vérifie si une valeur est un vrai nom d'équipe (pas un placeholder)
-function isTeamResolved(val) {
-  if (!val) return false;
-  if (/^1er Gr\./.test(val)) return false;
-  if (/^2e Gr\./.test(val)) return false;
-  if (/^3e Gr\./.test(val)) return false;
-  if (/^Vainq\./.test(val)) return false;
-  if (/^Perdant/.test(val)) return false;
-  return true;
-}
-function seedLabel(val) {
-  if (!val) return '';
-  return val
-    .replace(/^1er Gr\./, '1er ')
-    .replace(/^2e Gr\./, '2e ')
-    .replace(/^3e Gr\./, '3e ')
-    .replace(/^Vainq\. /, 'V.');
-}
 const $ = id => document.getElementById(id);
 const setAll = (ids, prop, val) => ids.forEach(id => { const el = $(id); if (el) el[prop] = val; });
 const SCORES = {};
@@ -27,51 +9,51 @@ const KNOCKOUT_ROUNDS = [
 {
 round:'16es de finale', dates:'28 juin – 3 juillet', color:'#7c3aed',
 matches:[
-{id:'ko73', label:'M73', home:'2e Gr.A',         away:'2e Gr.B',          date:'28 juin', time:'15h00', stadium:'SoFi Stadium',           city:'Los Angeles'},
-{id:'ko76', label:'M76', home:'1er Gr.C',        away:'2e Gr.F',          date:'28 juin', time:'13h00', stadium:'NRG Stadium',             city:'Houston'},
-{id:'ko74', label:'M74', home:'1er Gr.E',        away:'3e Gr.A/B/C/D/F', date:'29 juin', time:'16h30', stadium:'Gillette Stadium',        city:'Boston'},
-{id:'ko75', label:'M75', home:'1er Gr.F',        away:'2e Gr.C',          date:'29 juin', time:'21h00', stadium:'Estadio BBVA',            city:'Monterrey'},
-{id:'ko78', label:'M78', home:'2e Gr.E',         away:'2e Gr.I',          date:'30 juin', time:'13h00', stadium:'AT&T Stadium',            city:'Dallas'},
-{id:'ko77', label:'M77', home:'1er Gr.I',        away:'3e Gr.C/D/F/G/H', date:'30 juin', time:'17h00', stadium:'MetLife Stadium',         city:'New York'},
-{id:'ko79', label:'M79', home:'1er Gr.A',        away:'3e Gr.C/E/F/H/I', date:'1er juil.', time:'21h00', stadium:'Estadio Azteca',        city:'Mexico'},
-{id:'ko80', label:'M80', home:'1er Gr.L',        away:'3e Gr.E/H/I/J/K', date:'1er juil.', time:'12h00', stadium:'Mercedes-Benz Stadium', city:'Atlanta'},
-{id:'ko82', label:'M82', home:'1er Gr.G',        away:'3e Gr.A/E/H/I/J', date:'1er juil.', time:'16h00', stadium:'Lumen Field',           city:'Seattle'},
-{id:'ko81', label:'M81', home:'1er Gr.D',        away:'3e Gr.B/E/F/I/J', date:'2 juil.',  time:'21h00', stadium:"Levi's Stadium",         city:'San Francisco'},
-{id:'ko84', label:'M84', home:'1er Gr.H',        away:'2e Gr.J',          date:'2 juil.',  time:'15h00', stadium:'SoFi Stadium',           city:'Los Angeles'},
-{id:'ko83', label:'M83', home:'2e Gr.K',         away:'2e Gr.L',          date:'2 juil.',  time:'21h00', stadium:'BMO Field',              city:'Toronto'},
-{id:'ko85', label:'M85', home:'1er Gr.B',        away:'3e Gr.E/F/G/I/J', date:'3 juil.',  time:'21h00', stadium:'BC Place',               city:'Vancouver'},
-{id:'ko86', label:'M86', home:'1er Gr.J',        away:'2e Gr.H',          date:'3 juil.',  time:'15h00', stadium:'Hard Rock Stadium',      city:'Miami'},
-{id:'ko87', label:'M87', home:'1er Gr.K',        away:'3e Gr.D/E/I/J/L', date:'3 juil.',  time:'21h00', stadium:'Estadio Azteca',         city:'Mexico'},
-{id:'ko88', label:'M88', home:'2e Gr.D',         away:'2e Gr.G',          date:'3 juil.',  time:'14h00', stadium:'AT&T Stadium',           city:'Dallas'},
+{id:'ko73', label:'M73', home:'2e Gr.A', away:'2e Gr.B', date:'28 juin', time:'15h00', stadium:'SoFi Stadium', city:'Los Angeles'},
+{id:'ko76', label:'M76', home:'1er Gr.C', away:'2e Gr.F', date:'28 juin', time:'13h00', stadium:'NRG Stadium', city:'Houston'},
+{id:'ko74', label:'M74', home:'1er Gr.E', away:'3e Gr.A/B/C/D/F', date:'29 juin', time:'16h30', stadium:'Gillette Stadium', city:'Boston'},
+{id:'ko75', label:'M75', home:'1er Gr.F', away:'2e Gr.C', date:'29 juin', time:'21h00', stadium:'Estadio BBVA', city:'Monterrey'},
+{id:'ko78', label:'M78', home:'2e Gr.E', away:'2e Gr.I', date:'30 juin', time:'13h00', stadium:'AT&T Stadium', city:'Dallas'},
+{id:'ko77', label:'M77', home:'1er Gr.I', away:'3e Gr.C/D/F/G/H', date:'30 juin', time:'17h00', stadium:'MetLife Stadium', city:'New York'},
+{id:'ko79', label:'M79', home:'1er Gr.A', away:'3e Gr.C/E/F/H/I', date:'1er juil.', time:'21h00', stadium:'Estadio Azteca', city:'Mexico'},
+{id:'ko80', label:'M80', home:'1er Gr.L', away:'3e Gr.E/H/I/J/K', date:'1er juil.', time:'12h00', stadium:'Mercedes-Benz Stadium', city:'Atlanta'},
+{id:'ko82', label:'M82', home:'1er Gr.G', away:'3e Gr.A/E/H/I/J', date:'1er juil.', time:'16h00', stadium:'Lumen Field', city:'Seattle'},
+{id:'ko81', label:'M81', home:'1er Gr.D', away:'3e Gr.B/E/F/I/J', date:'2 juil.', time:'21h00', stadium:"Levi's Stadium", city:'San Francisco'},
+{id:'ko84', label:'M84', home:'1er Gr.H', away:'2e Gr.J', date:'2 juil.', time:'15h00', stadium:'SoFi Stadium', city:'Los Angeles'},
+{id:'ko83', label:'M83', home:'2e Gr.K', away:'2e Gr.L', date:'2 juil.', time:'21h00', stadium:'BMO Field', city:'Toronto'},
+{id:'ko85', label:'M85', home:'1er Gr.B', away:'3e Gr.E/F/G/I/J', date:'3 juil.', time:'21h00', stadium:'BC Place', city:'Vancouver'},
+{id:'ko86', label:'M86', home:'1er Gr.J', away:'2e Gr.H', date:'3 juil.', time:'15h00', stadium:'Hard Rock Stadium', city:'Miami'},
+{id:'ko87', label:'M87', home:'1er Gr.K', away:'3e Gr.D/E/I/J/L', date:'3 juil.', time:'21h00', stadium:'Estadio Azteca', city:'Mexico'},
+{id:'ko88', label:'M88', home:'2e Gr.D', away:'2e Gr.G', date:'3 juil.', time:'14h00', stadium:'AT&T Stadium', city:'Dallas'},
 ]
 },
 {
 round:'8es de finale', dates:'5 – 7 juillet', color:'#2563eb',
 matches:[
 {id:'ko89', label:'M89', home:'Vainq. M74', away:'Vainq. M77', date:'5 juil.', time:'17h00', stadium:'Lincoln Financial Field', city:'Philadelphie'},
-{id:'ko90', label:'M90', home:'Vainq. M73', away:'Vainq. M75', date:'5 juil.', time:'13h00', stadium:'NRG Stadium',             city:'Houston'},
-{id:'ko91', label:'M91', home:'Vainq. M76', away:'Vainq. M78', date:'5 juil.', time:'16h00', stadium:'MetLife Stadium',         city:'New York'},
-{id:'ko92', label:'M92', home:'Vainq. M79', away:'Vainq. M80', date:'5 juil.', time:'20h00', stadium:'Estadio Azteca',          city:'Mexico'},
-{id:'ko93', label:'M93', home:'Vainq. M83', away:'Vainq. M84', date:'6 juil.', time:'14h00', stadium:'AT&T Stadium',            city:'Dallas'},
-{id:'ko94', label:'M94', home:'Vainq. M81', away:'Vainq. M82', date:'6 juil.', time:'19h00', stadium:'Lumen Field',             city:'Seattle'},
-{id:'ko95', label:'M95', home:'Vainq. M86', away:'Vainq. M88', date:'7 juil.', time:'12h00', stadium:'Mercedes-Benz Stadium',   city:'Atlanta'},
-{id:'ko96', label:'M96', home:'Vainq. M85', away:'Vainq. M87', date:'7 juil.', time:'16h00', stadium:'BC Place',                city:'Vancouver'},
+{id:'ko90', label:'M90', home:'Vainq. M73', away:'Vainq. M75', date:'5 juil.', time:'13h00', stadium:'NRG Stadium', city:'Houston'},
+{id:'ko91', label:'M91', home:'Vainq. M76', away:'Vainq. M78', date:'5 juil.', time:'16h00', stadium:'MetLife Stadium', city:'New York'},
+{id:'ko92', label:'M92', home:'Vainq. M79', away:'Vainq. M80', date:'5 juil.', time:'20h00', stadium:'Estadio Azteca', city:'Mexico'},
+{id:'ko93', label:'M93', home:'Vainq. M83', away:'Vainq. M84', date:'6 juil.', time:'14h00', stadium:'AT&T Stadium', city:'Dallas'},
+{id:'ko94', label:'M94', home:'Vainq. M81', away:'Vainq. M82', date:'6 juil.', time:'19h00', stadium:'Lumen Field', city:'Seattle'},
+{id:'ko95', label:'M95', home:'Vainq. M86', away:'Vainq. M88', date:'7 juil.', time:'12h00', stadium:'Mercedes-Benz Stadium', city:'Atlanta'},
+{id:'ko96', label:'M96', home:'Vainq. M85', away:'Vainq. M87', date:'7 juil.', time:'16h00', stadium:'BC Place', city:'Vancouver'},
 ]
 },
 {
 round:'Quarts de finale', dates:'9 – 11 juillet', color:'#0891b2',
 matches:[
-{id:'ko97',  label:'QF1', home:'Vainq. M89', away:'Vainq. M90', date:'9 juil.',  time:'17h00', stadium:'Gillette Stadium',     city:'Boston'},
-{id:'ko98',  label:'QF2', home:'Vainq. M93', away:'Vainq. M94', date:'10 juil.', time:'15h00', stadium:'SoFi Stadium',         city:'Los Angeles'},
-{id:'ko99',  label:'QF3', home:'Vainq. M91', away:'Vainq. M92', date:'11 juil.', time:'17h00', stadium:'Hard Rock Stadium',    city:'Miami'},
-{id:'ko100', label:'QF4', home:'Vainq. M95', away:'Vainq. M96', date:'11 juil.', time:'13h00', stadium:'Arrowhead Stadium',    city:'Kansas City'},
+{id:'ko97', label:'QF1', home:'Vainq. M89', away:'Vainq. M90', date:'9 juil.', time:'17h00', stadium:'Gillette Stadium', city:'Boston'},
+{id:'ko98', label:'QF2', home:'Vainq. M93', away:'Vainq. M94', date:'10 juil.', time:'15h00', stadium:'SoFi Stadium', city:'Los Angeles'},
+{id:'ko99', label:'QF3', home:'Vainq. M91', away:'Vainq. M92', date:'11 juil.', time:'17h00', stadium:'Hard Rock Stadium', city:'Miami'},
+{id:'ko100', label:'QF4', home:'Vainq. M95', away:'Vainq. M96', date:'11 juil.', time:'13h00', stadium:'Arrowhead Stadium', city:'Kansas City'},
 ]
 },
 {
 round:'Demi-finales', dates:'14 – 15 juillet', color:'#b45309',
 matches:[
-{id:'ko101', label:'DF1', home:'Vainq. QF1', away:'Vainq. QF2', date:'14 juil.', time:'15h00', stadium:'AT&T Stadium',           city:'Dallas'},
-{id:'ko102', label:'DF2', home:'Vainq. QF3', away:'Vainq. QF4', date:'15 juil.', time:'15h00', stadium:'Mercedes-Benz Stadium',  city:'Atlanta'},
+{id:'ko101', label:'DF1', home:'Vainq. QF1', away:'Vainq. QF2', date:'14 juil.', time:'15h00', stadium:'AT&T Stadium', city:'Dallas'},
+{id:'ko102', label:'DF2', home:'Vainq. QF3', away:'Vainq. QF4', date:'15 juil.', time:'15h00', stadium:'Mercedes-Benz Stadium', city:'Atlanta'},
 ]
 },
 {
@@ -90,24 +72,6 @@ matches:[
 // GROUPS_DATA — voir data.js
 const KO_STATE = {}; // keyed by match id, stores {home, away, time, stadium, city, scoreH, scoreA}
 const LS_KEY = 'cdm2026';
-const KO_VERSION = 'v2'; // Incrémente pour forcer reset du bracket si placeholders bloqués
-// ── Migration : vide les slots KO qui contiennent encore des placeholders ──
-(function migrateKOState() {
-  try {
-    const raw = localStorage.getItem(LS_KEY);
-    if (!raw) return;
-    const state = JSON.parse(raw);
-    if (!state.ko) return;
-    let changed = false;
-    const PH = /^(1er Gr\.|2e Gr\.|3e Gr\.|Vainq\.|Perdant)/;
-    Object.keys(state.ko).forEach(id => {
-      const slot = state.ko[id];
-      if (slot.home && PH.test(slot.home)) { delete slot.home; changed = true; }
-      if (slot.away && PH.test(slot.away)) { delete slot.away; changed = true; }
-    });
-    if (changed) localStorage.setItem(LS_KEY, JSON.stringify(state));
-  } catch(e) {}
-})();
 function loadState() {
 try {
 const raw = localStorage.getItem(LS_KEY);
@@ -121,17 +85,17 @@ localStorage.setItem(LS_KEY, JSON.stringify(Object.assign(current, patch)));
 } catch(e) {}
 }
 const _state = loadState();
-let starred     = _state.starred     || [];
-const REACTIONS = _state.reactions  || {};   // { matchId: { emoji: count, _mine: emoji } }
+let starred = _state.starred || [];
+const REACTIONS = _state.reactions || {}; // { matchId: { emoji: count, _mine: emoji } }
 const REACTION_LIST = [
-{ key:'heart', emoji:'🧡', label:'J\'adore'    },
-{ key:'bulb',  emoji:'💡', label:'Génial !'   },
-{ key:'broke', emoji:'💔', label:'Déçu'       },
+{ key:'heart', emoji:'🧡', label:'J\'adore' },
+{ key:'bulb', emoji:'💡', label:'Génial !' },
+{ key:'broke', emoji:'💔', label:'Déçu' },
 { key:'angry', emoji:'😡', label:'En colère' },
 ];
 let currentGroup = 'all';
 let currentSearch = '';
-let isDark      = _state.isDark !== undefined ? _state.isDark : true;
+let isDark = _state.isDark !== undefined ? _state.isDark : true;
 if (_state.scores) Object.assign(SCORES, _state.scores);
 if (_state.ko) Object.assign(KO_STATE, _state.ko);
 function getFlag(name) { return FLAGS[name] || '🏴'; }
@@ -289,12 +253,12 @@ return parseInt(partsA[0]) - parseInt(partsB[0]);
 });
 // Date d'aujourd'hui (jour + mois local)
 const now = new Date();
-const todayDay   = now.getDate();
+const todayDay = now.getDate();
 const todayMonth = now.getMonth() + 1;
 const months = {'juin':6,'juil':7};
 function isPassee(dateStr) {
 const parts = dateStr.trim().split(' ');
-const day   = parseInt(parts[0]);
+const day = parseInt(parts[0]);
 const month = months[parts[1]] || 0;
 if (month !== todayMonth) return month < todayMonth;
 return day < todayDay;
@@ -344,6 +308,7 @@ cont.appendChild(section);
 });
 applyFilters();
 }
+
 function togglePastMatches() {
 const sections = document.querySelectorAll('#matchesContainer .past-section');
 const btn = document.querySelector('#pastMatchesBtn button');
@@ -475,6 +440,7 @@ $('groupTeamOverlay').classList.remove('open');
 function getQualifiedTeams() {
 const qualified = {};
 const thirdPlace = [];
+
 Object.keys(GROUPS_DATA).forEach(letter => {
 const standings = computeStandings(letter);
 qualified[letter] = {
@@ -491,12 +457,15 @@ gf: standings[2].bp
 });
 }
 });
+
 thirdPlace.sort((a, b) => {
 if (b.points !== a.points) return b.points - a.points;
 if (b.gd !== a.gd) return b.gd - a.gd;
 return b.gf - a.gf;
 });
+
 const best8Third = thirdPlace.slice(0, 8).map(t => t.name);
+
 return { qualified, best8Third };
 }
 function renderBracket() {
@@ -519,13 +488,14 @@ row.className = 'bracket-matches-row';
 const isReadonly = !!r.readonly;
 r.matches.forEach(m => {
 const saved = KO_STATE[m.id] || {};
-const homeVal = saved.home    || m.home    || '';
-const awayVal = saved.away    || m.away    || '';
-const timeVal = saved.time    || m.time    || '';
+const homeVal = saved.home || m.home || '';
+const awayVal = saved.away || m.away || '';
+const timeVal = saved.time || m.time || '';
 const stadVal = saved.stadium || m.stadium || '';
-const cityVal = saved.city    || m.city    || '';
-const scoreH  = saved.scoreH !== undefined ? saved.scoreH : '';
-const scoreA  = saved.scoreA !== undefined ? saved.scoreA : '';
+const cityVal = saved.city || m.city || '';
+const scoreH = saved.scoreH !== undefined ? saved.scoreH : '';
+const scoreA = saved.scoreA !== undefined ? saved.scoreA : '';
+
 const hasScore = scoreH !== '' && scoreA !== '';
 const hasTeams = homeVal && awayVal;
 const card = document.createElement('div');
@@ -552,39 +522,28 @@ ${stadVal ? `<span>🏟️ ${stadVal}${cityVal ? ', ' + cityVal : ''}</span>` : 
 </div>
 `;
 } else {
-const homeResolved = isTeamResolved(homeVal);
-const awayResolved = isTeamResolved(awayVal);
-card.title = 'Cliquer pour saisir le score';
+card.title = 'Cliquer pour modifier';
 card.innerHTML = `
 <div class="ko-card-label" style="background:${r.color || 'var(--knockout)'}">
 ${m.label}
 ${hasScore ? `<span class="ko-score-badge">${scoreH}–${scoreA}</span>` : ''}
 </div>
 <div class="ko-team ${hasScore && parseInt(scoreH) > parseInt(scoreA) ? 'ko-winner' : ''}">
-<span class="ko-flag">${homeResolved ? getFlag(homeVal) : '<span style="opacity:0.3;font-size:20px;">🏴</span>'}</span>
-<span class="ko-name${homeResolved ? '' : ' ko-pending'}">${homeResolved ? homeVal : 'À déterminer'}</span>
-${!homeResolved && homeVal ? `<span style="font-family:var(--font-ui);font-size:8px;color:var(--text2);opacity:0.6;margin-left:4px;">${seedLabel(homeVal)}</span>` : ''}
-${hasScore && homeResolved ? `<span class="ko-pts">${scoreH}</span>` : ''}
+<span class="ko-flag">${hasTeams ? getFlag(homeVal) : '❓'}</span>
+<span class="ko-name">${homeVal || '—'}</span>
+${hasScore ? `<span class="ko-pts">${scoreH}</span>` : ''}
 </div>
 <div class="ko-separator"></div>
 <div class="ko-team ${hasScore && parseInt(scoreA) > parseInt(scoreH) ? 'ko-winner' : ''}">
-<span class="ko-flag">${awayResolved ? getFlag(awayVal) : '<span style="opacity:0.3;font-size:20px;">🏴</span>'}</span>
-<span class="ko-name${awayResolved ? '' : ' ko-pending'}">${awayResolved ? awayVal : 'À déterminer'}</span>
-${!awayResolved && awayVal ? `<span style="font-family:var(--font-ui);font-size:8px;color:var(--text2);opacity:0.6;margin-left:4px;">${seedLabel(awayVal)}</span>` : ''}
-${hasScore && awayResolved ? `<span class="ko-pts">${scoreA}</span>` : ''}
+<span class="ko-flag">${hasTeams ? getFlag(awayVal) : '❓'}</span>
+<span class="ko-name">${awayVal || '—'}</span>
+${hasScore ? `<span class="ko-pts">${scoreA}</span>` : ''}
 </div>
 ${timeVal || stadVal ? `
 <div class="ko-meta">
 ${timeVal ? `<span>🕐 ${timeVal}</span>` : ''}
 ${stadVal ? `<span>🏟️ ${stadVal}${cityVal ? ', ' + cityVal : ''}</span>` : ''}
 </div>` : ''}
-${hasScore && homeResolved && awayResolved && parseInt(scoreH) !== parseInt(scoreA)
-? honorMatchHtml(
-parseInt(scoreH) > parseInt(scoreA) ? homeVal : awayVal,
-parseInt(scoreH) > parseInt(scoreA) ? awayVal : homeVal,
-Math.max(parseInt(scoreH), parseInt(scoreA)),
-Math.min(parseInt(scoreH), parseInt(scoreA)))
-: ''}
 <div class="ko-edit-hint">✏ modifier</div>
 `;
 card.addEventListener('click', () => openKOModal(m.id, r));
@@ -613,20 +572,20 @@ return;
 starredMatches.forEach(m => renderMatchCard(m, cont));
 }
 function applyFilters() {
-const selDate  = $('filterDate')  ? $('filterDate').value  : '';
-const selCity  = $('filterCity')  ? $('filterCity').value  : '';
+const selDate = $('filterDate') ? $('filterDate').value : '';
+const selCity = $('filterCity') ? $('filterCity').value : '';
 const selStade = $('filterStade') ? $('filterStade').value : '';
 const cards = document.querySelectorAll('#matchesContainer .match-card');
 cards.forEach(card => {
-const mid   = parseInt(card.dataset.id);
-const m     = MATCHES.find(x => x.id === mid);
+const mid = parseInt(card.dataset.id);
+const m = MATCHES.find(x => x.id === mid);
 const group = card.dataset.group;
-const text  = card.dataset.text || '';
+const text = card.dataset.text || '';
 const groupOk = currentGroup === 'all' || group === currentGroup;
 const searchOk = !currentSearch || text.includes(currentSearch.toLowerCase());
-const dateOk  = !selDate  || (m && m.date     === selDate);
-const cityOk  = !selCity  || (m && m.city     === selCity);
-const stadeOk = !selStade || (m && m.stadium  === selStade);
+const dateOk = !selDate || (m && m.date === selDate);
+const cityOk = !selCity || (m && m.city === selCity);
+const stadeOk = !selStade || (m && m.stadium === selStade);
 card.style.display = (groupOk && searchOk && dateOk && cityOk && stadeOk) ? '' : 'none';
 });
 document.querySelectorAll('#matchesContainer .phase-section').forEach(sec => {
@@ -727,14 +686,14 @@ approved.sort((a,b) => a[1].timestamp - b[1].timestamp);
 el.innerHTML = approved.map(([,c]) => `
 <div class="comment-item">
 <div class="comment-pseudo">${c.pseudo || 'Anonyme'}</div>
-<div class="comment-text">${c.text.replace(/</g,'&lt;')}</div>
+<div class="comment-text">${c.text.replace(/</g,'<')}</div>
 <div class="comment-time">${new Date(c.timestamp).toLocaleString('fr-FR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}</div>
 </div>`).join('');
 }
 function submitComment(matchId) {
-const textEl   = $('ctext-'   + matchId);
+const textEl = $('ctext-' + matchId);
 const pseudoEl = $('cpseudo-' + matchId);
-const text   = textEl   ? textEl.value.trim()   : '';
+const text = textEl ? textEl.value.trim() : '';
 const pseudo = pseudoEl ? pseudoEl.value.trim() : '';
 if (!text) { textEl && (textEl.style.borderColor='#e74c3c'); return; }
 if (window._fb) {
@@ -799,9 +758,9 @@ all.push({ matchId, commentId, ...c, matchLabel: m ? `${m.home} vs ${m.away}` : 
 });
 });
 all.sort((a,b) => b.timestamp - a.timestamp);
-const pending  = all.filter(c => !c.approved);
+const pending = all.filter(c => !c.approved);
 const approved = all.filter(c => c.approved);
-const display  = [...pending, ...approved];
+const display = [...pending, ...approved];
 if (!display.length) {
 cont.innerHTML = '<div class="admin-empty">Aucun commentaire pour l\'instant.</div>';
 return;
@@ -814,7 +773,7 @@ cont.innerHTML = display.map(c => `
 <span style="color:var(--group-c)">⚽ ${c.matchLabel}</span>
 <span class="${c.approved ? 'admin-badge-approved' : 'admin-badge-pending'}">${c.approved ? '✅ Approuvé' : '⏳ En attente'}</span>
 </div>
-<div class="admin-comment-text">${c.text.replace(/</g,'&lt;')}</div>
+<div class="admin-comment-text">${c.text.replace(/</g,'<')}</div>
 <div class="admin-comment-actions">
 ${!c.approved ? `<button class="btn-approve" onclick="fbApproveComment('${c.matchId}','${c.commentId}')">✅ Approuver</button>` : ''}
 <button class="btn-reject" onclick="fbDeleteComment('${c.matchId}','${c.commentId}')">🗑 Supprimer</button>
@@ -847,17 +806,17 @@ document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
 if (btn) btn.classList.add('active');
 const el = $('view-' + view);
 if (el) el.style.display = 'block';
-if (view === 'starred')      renderStarred();
-if (view === 'ranking')      renderRanking();
-if (view === 'scorers')      renderScorers();
-if (view === 'pronostics')   renderPronostics();
-if (view === 'ambassadors')  renderAmbassadors();
+if (view === 'starred') renderStarred();
+if (view === 'ranking') renderRanking();
+if (view === 'scorers') renderScorers();
+if (view === 'pronostics') renderPronostics();
+if (view === 'ambassadors') renderAmbassadors();
 }
 const FONT_URLS = {
-"'Playfair Display', serif":      'https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=optional',
-"'Rajdhani', sans-serif":         'https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&display=optional',
+"'Playfair Display', serif": 'https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=optional',
+"'Rajdhani', sans-serif": 'https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&display=optional',
 "'Roboto Condensed', sans-serif": 'https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@400;700&display=optional',
-"'Space Grotesk', sans-serif":    'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&display=optional',
+"'Space Grotesk', sans-serif": 'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&display=optional',
 };
 const loadedFonts = new Set();
 function setFont(font) {
@@ -887,7 +846,7 @@ applyThemeLabels();
 saveState({ isDark });
 }
 function applyThemeLabels() {
-const icon  = isDark ? '☀️' : '🌙';
+const icon = isDark ? '☀️' : '🌙';
 const label = isDark ? 'Clair' : 'Sombre';
 ['themeIcon','themeIcon2'].forEach(id => { const el = $(id); if(el) el.textContent = icon; });
 ['themeLabel','themeLabel2'].forEach(id => { const el = $(id); if(el) el.textContent = label; });
@@ -908,10 +867,10 @@ const d = Math.floor(diff / 86400000);
 const h = Math.floor((diff % 86400000) / 3600000);
 const m = Math.floor((diff % 3600000) / 60000);
 const s = Math.floor((diff % 60000) / 1000);
-$('cd-days').textContent  = String(d).padStart(2, '0');
+$('cd-days').textContent = String(d).padStart(2, '0');
 $('cd-hours').textContent = String(h).padStart(2, '0');
-$('cd-mins').textContent  = String(m).padStart(2, '0');
-$('cd-secs').textContent  = String(s).padStart(2, '0');
+$('cd-mins').textContent = String(m).padStart(2, '0');
+$('cd-secs').textContent = String(s).padStart(2, '0');
 }
 let currentModalId = null;
 function openModal(matchId) {
@@ -936,6 +895,7 @@ score.scorers.forEach(s => addScorerRow(s));
 $('modalOverlay').classList.add('open');
 $('mScoreHome').focus();
 }
+
 function closeModal() {
 $('modalOverlay').classList.remove('open');
 currentModalId = null;
@@ -1033,28 +993,28 @@ closeModal();
 }
 // TEAM_DATA — voir data.js
 const PALMARES = [
-{ year:2022, winner:'Argentine',   winnerFlag:'🇦🇷', finalist:'France',         finalistFlag:'🇫🇷', host:'Qatar',            score:'3-3 a.p. (4-2 tab)' },
-{ year:2018, winner:'France',      winnerFlag:'🇫🇷', finalist:'Croatie',        finalistFlag:'🇭🇷', host:'Russie',           score:'4-2' },
-{ year:2014, winner:'Allemagne',   winnerFlag:'🇩🇪', finalist:'Argentine',      finalistFlag:'🇦🇷', host:'Brésil',           score:'1-0 a.p.' },
-{ year:2010, winner:'Espagne',     winnerFlag:'🇪🇸', finalist:'Pays-Bas',       finalistFlag:'🇳🇱', host:'Afrique du Sud',   score:'1-0 a.p.' },
-{ year:2006, winner:'Italie',      winnerFlag:'🇮🇹', finalist:'France',         finalistFlag:'🇫🇷', host:'Allemagne',        score:'1-1 a.p. (5-3 tab)' },
-{ year:2002, winner:'Brésil',      winnerFlag:'🇧🇷', finalist:'Allemagne',      finalistFlag:'🇩🇪', host:'Corée du S./Japon',score:'2-0' },
-{ year:1998, winner:'France',      winnerFlag:'🇫🇷', finalist:'Brésil',         finalistFlag:'🇧🇷', host:'France',           score:'3-0' },
-{ year:1994, winner:'Brésil',      winnerFlag:'🇧🇷', finalist:'Italie',         finalistFlag:'🇮🇹', host:'États-Unis',       score:'0-0 a.p. (3-2 tab)' },
-{ year:1990, winner:'Allemagne',   winnerFlag:'🇩🇪', finalist:'Argentine',      finalistFlag:'🇦🇷', host:'Italie',           score:'1-0' },
-{ year:1986, winner:'Argentine',   winnerFlag:'🇦🇷', finalist:'Allemagne',      finalistFlag:'🇩🇪', host:'Mexique',          score:'3-2' },
-{ year:1982, winner:'Italie',      winnerFlag:'🇮🇹', finalist:'Allemagne',      finalistFlag:'🇩🇪', host:'Espagne',          score:'3-1' },
-{ year:1978, winner:'Argentine',   winnerFlag:'🇦🇷', finalist:'Pays-Bas',       finalistFlag:'🇳🇱', host:'Argentine',        score:'3-1 a.p.' },
-{ year:1974, winner:'Allemagne',   winnerFlag:'🇩🇪', finalist:'Pays-Bas',       finalistFlag:'🇳🇱', host:'Allemagne',        score:'2-1' },
-{ year:1970, winner:'Brésil',      winnerFlag:'🇧🇷', finalist:'Italie',         finalistFlag:'🇮🇹', host:'Mexique',          score:'4-1' },
-{ year:1966, winner:'Angleterre',  winnerFlag:'🏴󠁧󠁢󠁥󠁮󠁧󠁿', finalist:'Allemagne',      finalistFlag:'🇩🇪', host:'Angleterre',       score:'4-2 a.p.' },
-{ year:1962, winner:'Brésil',      winnerFlag:'🇧🇷', finalist:'Tchécoslovaquie',finalistFlag:'🇨🇿', host:'Chili',            score:'3-1' },
-{ year:1958, winner:'Brésil',      winnerFlag:'🇧🇷', finalist:'Suède',          finalistFlag:'🇸🇪', host:'Suède',            score:'5-2' },
-{ year:1954, winner:'Allemagne',   winnerFlag:'🇩🇪', finalist:'Hongrie',        finalistFlag:'🇭🇺', host:'Suisse',           score:'3-2' },
-{ year:1950, winner:'Uruguay',     winnerFlag:'🇺🇾', finalist:'Brésil',         finalistFlag:'🇧🇷', host:'Brésil',           score:'2-1 *' },
-{ year:1938, winner:'Italie',      winnerFlag:'🇮🇹', finalist:'Hongrie',        finalistFlag:'🇭🇺', host:'France',           score:'4-2' },
-{ year:1934, winner:'Italie',      winnerFlag:'🇮🇹', finalist:'Tchécoslovaquie',finalistFlag:'🇨🇿', host:'Italie',           score:'2-1 a.p.' },
-{ year:1930, winner:'Uruguay',     winnerFlag:'🇺🇾', finalist:'Argentine',      finalistFlag:'🇦🇷', host:'Uruguay',          score:'4-2' },
+{ year:2022, winner:'Argentine', winnerFlag:'🇦🇷', finalist:'France', finalistFlag:'🇫🇷', host:'Qatar', score:'3-3 a.p. (4-2 tab)' },
+{ year:2018, winner:'France', winnerFlag:'🇫🇷', finalist:'Croatie', finalistFlag:'🇭🇷', host:'Russie', score:'4-2' },
+{ year:2014, winner:'Allemagne', winnerFlag:'🇩🇪', finalist:'Argentine', finalistFlag:'🇦🇷', host:'Brésil', score:'1-0 a.p.' },
+{ year:2010, winner:'Espagne', winnerFlag:'🇪🇸', finalist:'Pays-Bas', finalistFlag:'🇳🇱', host:'Afrique du Sud', score:'1-0 a.p.' },
+{ year:2006, winner:'Italie', winnerFlag:'🇮🇹', finalist:'France', finalistFlag:'🇫🇷', host:'Allemagne', score:'1-1 a.p. (5-3 tab)' },
+{ year:2002, winner:'Brésil', winnerFlag:'🇧🇷', finalist:'Allemagne', finalistFlag:'🇩🇪', host:'Corée du S./Japon',score:'2-0' },
+{ year:1998, winner:'France', winnerFlag:'🇫🇷', finalist:'Brésil', finalistFlag:'🇧🇷', host:'France', score:'3-0' },
+{ year:1994, winner:'Brésil', winnerFlag:'🇧🇷', finalist:'Italie', finalistFlag:'🇮🇹', host:'États-Unis', score:'0-0 a.p. (3-2 tab)' },
+{ year:1990, winner:'Allemagne', winnerFlag:'🇩🇪', finalist:'Argentine', finalistFlag:'🇦🇷', host:'Italie', score:'1-0' },
+{ year:1986, winner:'Argentine', winnerFlag:'🇦🇷', finalist:'Allemagne', finalistFlag:'🇩🇪', host:'Mexique', score:'3-2' },
+{ year:1982, winner:'Italie', winnerFlag:'🇮🇹', finalist:'Allemagne', finalistFlag:'🇩🇪', host:'Espagne', score:'3-1' },
+{ year:1978, winner:'Argentine', winnerFlag:'🇦🇷', finalist:'Pays-Bas', finalistFlag:'🇳🇱', host:'Argentine', score:'3-1 a.p.' },
+{ year:1974, winner:'Allemagne', winnerFlag:'🇩🇪', finalist:'Pays-Bas', finalistFlag:'🇳🇱', host:'Allemagne', score:'2-1' },
+{ year:1970, winner:'Brésil', winnerFlag:'🇧🇷', finalist:'Italie', finalistFlag:'🇮🇹', host:'Mexique', score:'4-1' },
+{ year:1966, winner:'Angleterre', winnerFlag:'🏴󠁧󠁢󠁥󠁮󠁧󠁿', finalist:'Allemagne', finalistFlag:'🇩🇪', host:'Angleterre', score:'4-2 a.p.' },
+{ year:1962, winner:'Brésil', winnerFlag:'🇧🇷', finalist:'Tchécoslovaquie',finalistFlag:'🇨🇿', host:'Chili', score:'3-1' },
+{ year:1958, winner:'Brésil', winnerFlag:'🇧🇷', finalist:'Suède', finalistFlag:'🇸🇪', host:'Suède', score:'5-2' },
+{ year:1954, winner:'Allemagne', winnerFlag:'🇩🇪', finalist:'Hongrie', finalistFlag:'🇭🇺', host:'Suisse', score:'3-2' },
+{ year:1950, winner:'Uruguay', winnerFlag:'🇺🇾', finalist:'Brésil', finalistFlag:'🇧🇷', host:'Brésil', score:'2-1 *' },
+{ year:1938, winner:'Italie', winnerFlag:'🇮🇹', finalist:'Hongrie', finalistFlag:'🇭🇺', host:'France', score:'4-2' },
+{ year:1934, winner:'Italie', winnerFlag:'🇮🇹', finalist:'Tchécoslovaquie',finalistFlag:'🇨🇿', host:'Italie', score:'2-1 a.p.' },
+{ year:1930, winner:'Uruguay', winnerFlag:'🇺🇾', finalist:'Argentine', finalistFlag:'🇦🇷', host:'Uruguay', score:'4-2' },
 ];
 function openSidebar() {
 $('sidebar').classList.add('open');
@@ -1231,8 +1191,8 @@ document.querySelectorAll('.sidebar-section').forEach(s => s.classList.remove('a
 const sec = document.getElementById('section-equipes');
 if (sec) sec.classList.add('active');
 const fiche = document.getElementById('teamFiche');
-const list  = document.getElementById('teamsListView');
-if (list)  list.style.display  = 'none';
+const list = document.getElementById('teamsListView');
+if (list) list.style.display = 'none';
 if (fiche) fiche.style.display = '';
 showTeamFiche(teamName, group);
 }, 200);
@@ -1335,15 +1295,16 @@ const found = r.matches.find(m => m.id === matchId);
 if (found) { matchDef = found; break; }
 }
 if (!matchDef) return;
+
 const saved = KO_STATE[matchId] || {};
 $('koModalTitle').textContent = (round ? round.round + ' · ' : '') + matchDef.label;
-$('koHome').value    = saved.home    || matchDef.home    || '';
-$('koAway').value    = saved.away    || matchDef.away    || '';
-$('koTime').value    = saved.time    || matchDef.time    || '';
+$('koHome').value = saved.home || matchDef.home || '';
+$('koAway').value = saved.away || matchDef.away || '';
+$('koTime').value = saved.time || matchDef.time || '';
 $('koStadium').value = saved.stadium || matchDef.stadium || '';
-$('koCity').value    = saved.city    || matchDef.city    || '';
-$('koScoreH').value  = saved.scoreH !== undefined ? saved.scoreH : '';
-$('koScoreA').value  = saved.scoreA !== undefined ? saved.scoreA : '';
+$('koCity').value = saved.city || matchDef.city || '';
+$('koScoreH').value = saved.scoreH !== undefined ? saved.scoreH : '';
+$('koScoreA').value = saved.scoreA !== undefined ? saved.scoreA : '';
 const hName = saved.home || matchDef.home || 'DOM.';
 const aName = saved.away || matchDef.away || 'EXT.';
 $('koScoreHLbl').textContent = hName.substring(0,6).toUpperCase();
@@ -1364,13 +1325,13 @@ currentKOId = null;
 function saveKOMatch() {
 if (!currentKOId) return;
 KO_STATE[currentKOId] = {
-home:    $('koHome').value.trim(),
-away:    $('koAway').value.trim(),
-time:    $('koTime').value.trim(),
+home: $('koHome').value.trim(),
+away: $('koAway').value.trim(),
+time: $('koTime').value.trim(),
 stadium: $('koStadium').value.trim(),
-city:    $('koCity').value.trim(),
-scoreH:  $('koScoreH').value,
-scoreA:  $('koScoreA').value,
+city: $('koCity').value.trim(),
+scoreH: $('koScoreH').value,
+scoreA: $('koScoreA').value,
 };
 saveState({ ko: KO_STATE });
 renderBracket();
@@ -1549,9 +1510,9 @@ window._fb.set(userRef, { pseudo, pronos: PRONOS, updated: Date.now() });
 }
 function showPronoTab(tab) {
 document.getElementById('prono-view-predictions').style.display = tab === 'predictions' ? '' : 'none';
-document.getElementById('prono-view-ranking').style.display     = tab === 'ranking'     ? '' : 'none';
-document.getElementById('prono-tab-pred').className  = tab === 'predictions' ? 'comment-submit-btn' : 'filter-reset-btn';
-document.getElementById('prono-tab-rank').className  = tab === 'ranking'     ? 'comment-submit-btn' : 'filter-reset-btn';
+document.getElementById('prono-view-ranking').style.display = tab === 'ranking' ? '' : 'none';
+document.getElementById('prono-tab-pred').className = tab === 'predictions' ? 'comment-submit-btn' : 'filter-reset-btn';
+document.getElementById('prono-tab-rank').className = tab === 'ranking' ? 'comment-submit-btn' : 'filter-reset-btn';
 if (tab === 'ranking') renderPronoRanking();
 }
 function renderPronostics() {
@@ -1609,11 +1570,11 @@ renderPronostics(); // refresh
 function calcPronoPoints(prono, score) {
 if (!prono || prono.home === undefined || !score || score.home === undefined) return 0;
 const ph = parseInt(prono.home), pa = parseInt(prono.away);
-const sh = parseInt(score.home),  sa = parseInt(score.away);
+const sh = parseInt(score.home), sa = parseInt(score.away);
 if (isNaN(ph)||isNaN(pa)||isNaN(sh)||isNaN(sa)) return 0;
 if (ph === sh && pa === sa) return 5; // score exact
 const pronoWin = ph > pa ? 'H' : pa > ph ? 'A' : 'N';
-const realWin  = sh > sa ? 'H' : sa > sh ? 'A' : 'N';
+const realWin = sh > sa ? 'H' : sa > sh ? 'A' : 'N';
 if (pronoWin === realWin) return 3; // bon résultat
 return 0;
 }
@@ -2012,6 +1973,7 @@ if (lower.includes(word)) return false;
 }
 return true;
 }
+
 function countFlags(matchId, commentId) {
 const key = `_flags_${matchId}_${commentId}`;
 const flags = JSON.parse(localStorage.getItem(key) || '[]');
@@ -2024,15 +1986,18 @@ const flags = JSON.parse(localStorage.getItem(key) || '[]');
 if (flags.includes(uid)) return; // déjà signalé
 flags.push(uid);
 localStorage.setItem(key, JSON.stringify(flags));
+
 if (window._fb) {
 window._fb.set(
 window._fb.ref(window._fb.db, `flags/${matchId}/${commentId}/${uid}`),
 true
 );
 }
+
 if (flags.length >= 3) {
 autoHideComment(matchId, commentId);
 }
+
 showPointsToast('Signalement enregistré 🚩');
 }
 function autoHideComment(matchId, commentId) {
@@ -2141,8 +2106,8 @@ try { if (typeof renderGroups === 'function') renderGroups(); } catch(e) {}
 try { if (typeof renderScorers === 'function') renderScorers(); } catch(e) {}
 }
 const RAPIDAPI_KEY = 'b54773ac56msheedcadcc3491eaep1b4037jsnd742271224e0';
-const WC_LEAGUE_ID = 1;     // FIFA World Cup
-const WC_SEASON    = 2026;
+const WC_LEAGUE_ID = 1; // FIFA World Cup
+const WC_SEASON = 2026;
 const API_TEAM_MAP = {
 'Mexico': 'Mexique',
 'South Africa': 'Afrique du Sud',
@@ -2216,6 +2181,7 @@ if (data.response && data.response.length > 0) {
 processApiFixtures(data.response);
 }
 } catch(e) {
+
 }
 }
 async function fetchTodayScores() {
@@ -2231,8 +2197,10 @@ headers: {
 const data = await res.json();
 if (data.response && data.response.length > 0) {
 processApiFixtures(data.response);
+
 }
 } catch(e) {
+
 }
 }
 function processApiFixtures(fixtures) {
@@ -2282,8 +2250,9 @@ card.insertBefore(badge, card.firstChild);
 function initAutoScores() {
 const now = new Date();
 const wcStart = new Date('2026-06-11');
-const wcEnd   = new Date('2026-07-20');
+const wcEnd = new Date('2026-07-20');
 if (now < wcStart || now > wcEnd) {
+
 return;
 }
 fetchTodayScores();
@@ -2293,15 +2262,15 @@ fetchTodayScores();
 }, 180000);
 }
 window.renderAdminComments = renderAdminComments;
-window.renderCommentsList  = renderCommentsList;
-window.fbApproveComment    = function(mid, cid) { if(window._fb) window._fb.update(window._fb.ref(window._fb.db,'comments/'+mid+'/'+cid),{approved:true}); addPoints(5, 'Commentaire approuvé'); };
-window.fbDeleteComment     = function(mid, cid) { if(window._fb) window._fb.remove(window._fb.ref(window._fb.db,'comments/'+mid+'/'+cid)); };
+window.renderCommentsList = renderCommentsList;
+window.fbApproveComment = function(mid, cid) { if(window._fb) window._fb.update(window._fb.ref(window._fb.db,'comments/'+mid+'/'+cid),{approved:true}); addPoints(5, 'Commentaire approuvé'); };
+window.fbDeleteComment = function(mid, cid) { if(window._fb) window._fb.remove(window._fb.ref(window._fb.db,'comments/'+mid+'/'+cid)); };
 function initExtraFilters() {
-const dates  = [...new Set(MATCHES.map(m => m.date))];
+const dates = [...new Set(MATCHES.map(m => m.date))];
 const cities = [...new Set(MATCHES.map(m => m.city))].sort();
 const stades = [...new Set(MATCHES.map(m => m.stadium))].sort();
-const selDate  = $('filterDate');
-const selCity  = $('filterCity');
+const selDate = $('filterDate');
+const selCity = $('filterCity');
 const selStade = $('filterStade');
 if (!selDate || !selCity || !selStade) return;
 dates.forEach(d => {
@@ -2322,8 +2291,8 @@ selStade.appendChild(o);
 }
 function applyExtraFilters() { applyFilters(); }
 function resetExtraFilters() {
-if ($('filterDate'))  $('filterDate').value  = '';
-if ($('filterCity'))  $('filterCity').value  = '';
+if ($('filterDate')) $('filterDate').value = '';
+if ($('filterCity')) $('filterCity').value = '';
 if ($('filterStade')) $('filterStade').value = '';
 applyFilters();
 }
@@ -2351,11 +2320,11 @@ btn.title = on ? 'Désactiver thème ELMECO' : 'Thème ELMECO';
 const banner = $('elmecoThemeBanner');
 if (banner) banner.classList.toggle('visible', on);
 if (on) {
-document.documentElement.style.setProperty('--accent',  '#e08040');
+document.documentElement.style.setProperty('--accent', '#e08040');
 document.documentElement.style.setProperty('--accent2', '#604020');
 } else {
 const s = loadState();
-document.documentElement.style.setProperty('--accent',  s.accent  || '#e8b923');
+document.documentElement.style.setProperty('--accent', s.accent || '#e8b923');
 document.documentElement.style.setProperty('--accent2', s.accent2 || '#ff6b35');
 }
 }
