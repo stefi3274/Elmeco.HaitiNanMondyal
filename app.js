@@ -121,10 +121,21 @@ if (_state.ko) Object.assign(KO_STATE, _state.ko);
 
 function getFlag(name) { return FLAGS[name] || '🏴'; }
 
+// Détecte si une "équipe" est en réalité un placeholder non résolu
+// (1er A, 2e A, 2e Gr.A, 3e A/B/C, Vainq. M73, Perdant DF1, vide...)
+function isPlaceholderTeam(v) {
+  if (!v) return true;
+  v = String(v).trim();
+  if (/^(1er|2e|3e|4e)\b/.test(v)) return true;
+  if (/^Vainq/i.test(v)) return true;
+  if (/^Perdant/i.test(v)) return true;
+  if (/Gr\./.test(v)) return true;
+  return false;
+}
+
 function renderMatchCard(m, container) {
   // Sécurité : ne jamais afficher un match dont une équipe est encore un placeholder
-  const _isPlaceholder = v => !v || /^(1er Gr\.|2e Gr\.|3e Gr\.|Vainq\.|Perdant )/.test(v);
-  if (_isPlaceholder(m.home) || _isPlaceholder(m.away)) return;
+  if (isPlaceholderTeam(m.home) || isPlaceholderTeam(m.away)) return;
   const isStarred = starred.includes(m.id);
   const color = GROUP_COLORS[m.group] || GROUP_COLORS.KO;
   const isFeat = m.featured || FEATURED.some(f => f.includes(m.home.split(' ')[0]) || f.includes(m.away.split(' ')[0]));
@@ -274,13 +285,12 @@ function renderCalendar() {
   });
   // Ajouter les matchs de phase finale dont les 2 équipes sont connues
   if (typeof KNOCKOUT_ROUNDS !== 'undefined') {
-    const isPh = v => !v || /^(1er Gr\.|2e Gr\.|3e Gr\.|Vainq\.|Perdant )/.test(v);
     KNOCKOUT_ROUNDS.forEach(round => {
       round.matches.forEach(km => {
         const saved = KO_STATE[km.id] || {};
         const home = saved.home || km.home || '';
         const away = saved.away || km.away || '';
-        if (isPh(home) || isPh(away)) return; // équipes pas encore connues
+        if (isPlaceholderTeam(home) || isPlaceholderTeam(away)) return; // équipes pas encore connues
         const koMatch = {
           id: km.id,
           home: home,
