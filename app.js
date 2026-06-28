@@ -122,6 +122,9 @@ if (_state.ko) Object.assign(KO_STATE, _state.ko);
 function getFlag(name) { return FLAGS[name] || '🏴'; }
 
 function renderMatchCard(m, container) {
+  // Sécurité : ne jamais afficher un match dont une équipe est encore un placeholder
+  const _isPlaceholder = v => !v || /^(1er Gr\.|2e Gr\.|3e Gr\.|Vainq\.|Perdant )/.test(v);
+  if (_isPlaceholder(m.home) || _isPlaceholder(m.away)) return;
   const isStarred = starred.includes(m.id);
   const color = GROUP_COLORS[m.group] || GROUP_COLORS.KO;
   const isFeat = m.featured || FEATURED.some(f => f.includes(m.home.split(' ')[0]) || f.includes(m.away.split(' ')[0]));
@@ -291,6 +294,18 @@ function renderCalendar() {
           label: round.round + ' · ' + km.label,
           isKO: true,
         };
+        // Transférer le score KO vers SCORES pour qu'il s'affiche sur le calendrier
+        if (saved.scoreH !== undefined && saved.scoreH !== '' &&
+            saved.scoreA !== undefined && saved.scoreA !== '' &&
+            !isNaN(parseInt(saved.scoreH)) && !isNaN(parseInt(saved.scoreA))) {
+          if (!SCORES[km.id]) {
+            SCORES[km.id] = {
+              home: parseInt(saved.scoreH),
+              away: parseInt(saved.scoreA),
+              scorers: saved.scorers || [],
+            };
+          }
+        }
         if (!byDate[koMatch.date]) byDate[koMatch.date] = [];
         byDate[koMatch.date].push(koMatch);
       });
