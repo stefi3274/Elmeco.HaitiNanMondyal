@@ -580,6 +580,30 @@ function propagateKnockout() {
   return changed;
 }
 
+// Génère l'encart d'honneur pour un match terminé (gagnant + perdant)
+// Couleurs d'Haïti : bleu #00209F et rouge #D21034
+function honorMatchHtml(winner, loser, scoreW, scoreL) {
+if (!winner || !loser) return '';
+const winFlag = getFlag(winner);
+const loseFlag = getFlag(loser);
+const honorMsg = '🏆 Bravo ' + winFlag + ' ' + winner + ' ! Victoire ' + scoreW + '–' + scoreL + ' contre ' + loseFlag + ' ' + loser + '. 👏 Respect aux deux équipes ! #AyitiNanMondyal #BouyonBoul';
+const waLink = 'https://wa.me/?text=' + encodeURIComponent(honorMsg);
+return ''
++ '<div class="ko-honor" style="margin:8px 6px 6px;padding:8px 10px;border-radius:10px;'
++ 'background:linear-gradient(135deg,rgba(0,32,159,0.12),rgba(210,16,52,0.12));'
++ 'border:1px solid rgba(0,32,159,0.25);font-family:var(--font-ui);">'
++ '<div style="font-size:11px;line-height:1.5;color:var(--text);">'
++ '🏆 <b>' + winFlag + ' ' + winner + '</b> s\'impose !<br>'
++ '<span style="color:var(--text2);font-size:10px;">👏 Honneur à ' + loseFlag + ' ' + loser + ' pour le combat.</span>'
++ '</div>'
++ '<a href="' + waLink + '" target="_blank" rel="noopener" '
++ 'onclick="event.stopPropagation(); if(typeof addPoints===\'function\')addPoints(2,\'Partage honneur 🇭🇹\');" '
++ 'style="display:inline-flex;align-items:center;gap:5px;margin-top:6px;padding:5px 10px;'
++ 'background:#25D366;color:#fff;border-radius:14px;font-size:11px;font-weight:700;text-decoration:none;">'
++ '📲 Partager (+2 pts)</a>'
++ '</div>';
+}
+
 function renderBracket() {
   propagateKnockout();
 const s = loadState();
@@ -635,7 +659,6 @@ ${stadVal ? `<span>🏟️ ${stadVal}${cityVal ? ', ' + cityVal : ''}</span>` : 
 </div>
 `;
 } else {
-card.title = 'Cliquer pour modifier';
 card.innerHTML = `
 <div class="ko-card-label" style="background:${r.color || 'var(--knockout)'}">
 ${m.label}
@@ -657,9 +680,14 @@ ${timeVal || stadVal ? `
 ${timeVal ? `<span>🕐 ${timeVal}</span>` : ''}
 ${stadVal ? `<span>🏟️ ${stadVal}${cityVal ? ', ' + cityVal : ''}</span>` : ''}
 </div>` : ''}
-<div class="ko-edit-hint">✏ modifier</div>
+${hasScore && hasTeams && parseInt(scoreH) !== parseInt(scoreA)
+? honorMatchHtml(
+parseInt(scoreH) > parseInt(scoreA) ? homeVal : awayVal,
+parseInt(scoreH) > parseInt(scoreA) ? awayVal : homeVal,
+Math.max(parseInt(scoreH), parseInt(scoreA)),
+Math.min(parseInt(scoreH), parseInt(scoreA)))
+: ''}
 `;
-card.addEventListener('click', () => openKOModal(m.id, r));
 }
 row.appendChild(card);
 });
@@ -1679,7 +1707,12 @@ function renderPronostics() {
 const grid = document.getElementById('pronoGrid');
 if (!grid) return;
 grid.innerHTML = '';
-MATCHES.filter(m => m.group).forEach(m => {
+const upcoming = MATCHES.filter(m => m.group && !isPassee(m.date));
+if (!upcoming.length) {
+grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px 20px;font-family:var(--font-ui);color:var(--text2);font-size:14px;">⚽ Aucun match de groupe à venir.<br><span style="font-size:12px;">Les pronostics reviendront avec les prochains matchs !</span></div>';
+return;
+}
+upcoming.forEach(m => {
 const p = PRONOS[m.id];
 const isDone = p && p.home !== undefined && p.away !== undefined;
 const score = SCORES[m.id];
