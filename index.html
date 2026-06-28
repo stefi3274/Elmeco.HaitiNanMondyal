@@ -390,6 +390,69 @@
   .match-card.match-haiti {
     border: 1px solid rgba(232,185,35,0.45);
   }
+
+  /* ── Avion festif : pays éliminé ── */
+  .elim-plane {
+    position: fixed;
+    bottom: 70px;
+    left: -60vw;
+    z-index: 9000;
+    display: flex;
+    align-items: center;
+    gap: 0;
+    pointer-events: none;
+    white-space: nowrap;
+    animation: elim-fly 9s linear forwards;
+  }
+  .elim-plane-emoji {
+    font-size: 38px;
+    transform: scaleX(-1);
+    filter: drop-shadow(0 3px 6px rgba(0,0,0,0.4));
+  }
+  .elim-plane-banner {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: linear-gradient(135deg, #00209F, #D21034);
+    color: #fff;
+    padding: 8px 16px;
+    border-radius: 0 10px 10px 0;
+    margin-left: -4px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.35);
+    border: 2px solid rgba(255,255,255,0.25);
+    border-left: none;
+    position: relative;
+  }
+  .elim-plane-banner::before {
+    /* corde reliant l'avion à la banderole */
+    content: "";
+    position: absolute;
+    left: -10px;
+    top: 50%;
+    width: 10px;
+    height: 2px;
+    background: rgba(255,255,255,0.5);
+  }
+  .elim-plane-flag { font-size: 26px; line-height: 1; }
+  .elim-plane-text {
+    font-family: var(--font-ui, sans-serif);
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+  }
+  @keyframes elim-fly {
+    0%   { left: -60vw; transform: translateY(0); }
+    25%  { transform: translateY(-12px); }
+    50%  { transform: translateY(0); }
+    75%  { transform: translateY(-10px); }
+    100% { left: 110vw; transform: translateY(0); }
+  }
+  @media (max-width: 600px) {
+    .elim-plane-emoji { font-size: 30px; }
+    .elim-plane-text { font-size: 12px; }
+    .elim-plane-flag { font-size: 22px; }
+    .elim-plane { bottom: 80px; }
+  }
 </style>
 
 </head>
@@ -1116,6 +1179,22 @@
             <div class="ko-score-lbl" id="koScoreALbl">EXT.</div>
           </div>
         </div>
+        <!-- Tirs au but (si match nul) -->
+        <div id="koPenaltyZone" style="margin-top:12px;display:none;">
+          <div class="ko-section-lbl" style="font-size:12px;margin-bottom:8px;">🥅 Match nul — Vainqueur aux tirs au but</div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <select class="ko-input" id="koPenWinner" style="flex:1;min-width:140px;padding:8px;">
+              <option value="">-- Qui se qualifie ? --</option>
+              <option value="home" id="koPenHomeOpt">Domicile</option>
+              <option value="away" id="koPenAwayOpt">Extérieur</option>
+            </select>
+            <div style="display:flex;gap:6px;align-items:center;">
+              <input class="ko-input" id="koPenH" type="number" min="0" max="30" placeholder="TAB" style="width:60px;padding:8px;" title="Tirs au but Domicile">
+              <span>–</span>
+              <input class="ko-input" id="koPenA" type="number" min="0" max="30" placeholder="TAB" style="width:60px;padding:8px;" title="Tirs au but Extérieur">
+            </div>
+          </div>
+        </div>
       </div>
       <!-- Heure & Stade -->
       <div class="ko-section-sep-lg">
@@ -1132,6 +1211,11 @@
           <div class="ko-field full">
             <label class="ko-label">📍 Ville</label>
             <input class="ko-input" id="koCity" type="text" placeholder="Ex : New York, Dallas…">
+          </div>
+          <div class="ko-field full" style="margin-top:14px;border-top:1px solid var(--border);padding-top:14px;">
+            <label class="ko-label">⚽ Buteurs</label>
+            <div id="koScorersList"></div>
+            <button type="button" onclick="addKOScorerRow()" style="margin-top:8px;width:100%;padding:9px;background:var(--surface2);border:1px dashed var(--border);border-radius:8px;color:var(--accent);font-size:13px;cursor:pointer;">+ Ajouter un buteur</button>
           </div>
         </div>
       </div>

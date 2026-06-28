@@ -1428,6 +1428,68 @@ function renderHaitiMatches() {
 
 let currentKOId = null;
 
+// ── Festivité : avion avec drapeau du pays éliminé ──
+let _planeQueue = [];
+let _planeRunning = false;
+
+// Détermine le perdant d'un match KO et lance son avion
+function checkEliminationFlyout(koId) {
+  const ko = KO_STATE[koId];
+  if (!ko) return;
+  const sh = parseInt(ko.scoreH), sa = parseInt(ko.scoreA);
+  if (isNaN(sh) || isNaN(sa)) return;
+  if (!ko.home || !ko.away) return;
+  // Ne pas traiter des placeholders comme des équipes
+  const isPh = v => /^(1er Gr\.|2e Gr\.|3e Gr\.|Vainq\.|Perdant )/.test(v);
+  if (isPh(ko.home) || isPh(ko.away)) return;
+
+  let loser = null;
+  if (sh > sa) loser = ko.away;
+  else if (sa > sh) loser = ko.home;
+  else {
+    // Match nul : le perdant est déterminé par les tirs au but
+    if (ko.penWinner === 'home') loser = ko.away;
+    else if (ko.penWinner === 'away') loser = ko.home;
+    else return; // pas encore tranché
+  }
+  if (loser) queueEliminationPlane(loser);
+}
+
+// Ajoute un pays à la file des avions
+function queueEliminationPlane(team) {
+  _planeQueue.push(team);
+  if (!_planeRunning) runPlaneQueue();
+}
+
+// Joue les avions à tour de rôle
+function runPlaneQueue() {
+  if (!_planeQueue.length) { _planeRunning = false; return; }
+  _planeRunning = true;
+  const team = _planeQueue.shift();
+  showEliminationPlane(team, () => {
+    // petite pause entre deux avions
+    setTimeout(runPlaneQueue, 600);
+  });
+}
+
+// Affiche un avion qui traverse le bas de l'écran avec le drapeau
+function showEliminationPlane(team, onDone) {
+  const flag = getFlag(team);
+  const plane = document.createElement('div');
+  plane.className = 'elim-plane';
+  plane.innerHTML =
+    '<span class="elim-plane-emoji">✈️</span>' +
+    '<span class="elim-plane-banner">' +
+      '<span class="elim-plane-flag">' + flag + '</span>' +
+      '<span class="elim-plane-text">' + team + ' · Rendez-vous 2030 · ELMECO 😘</span>' +
+    '</span>';
+  document.body.appendChild(plane);
+  // Retire après l'animation (durée CSS = 9s)
+  const cleanup = () => { plane.remove(); if (onDone) onDone(); };
+  plane.addEventListener('animationend', cleanup);
+  setTimeout(cleanup, 9500); // filet de sécurité
+}
+
 function openKOModal(matchId, round) {
   currentKOId = matchId;
   let matchDef = null;
@@ -1454,13 +1516,92 @@ function openKOModal(matchId, round) {
 
   $('koHome').oninput = function() {
     $('koScoreHLbl').textContent = (this.value || 'DOM.').substring(0,6).toUpperCase();
+    refreshKOScorerTeams();
+    refreshKOPenaltyTeams();
   };
   $('koAway').oninput = function() {
     $('koScoreALbl').textContent = (this.value || 'EXT.').substring(0,6).toUpperCase();
+    refreshKOScorerTeams();
+    refreshKOPenaltyTeams();
   };
+
+  // Tirs au but : pré-remplir + afficher si match nul
+  $('koPenH').value = saved.penH !== undefined ? saved.penH : '';
+  $('koPenA').value = saved.penA !== undefined ? saved.penA : '';
+  $('koPenWinner').value = saved.penWinner || '';
+  refreshKOPenaltyTeams();
+  $('koScoreH').oninput = updateKOPenaltyVisibility;
+  $('koScoreA').oninput = updateKOPenaltyVisibility;
+  updateKOPenaltyVisibility();
+
+  // Remplir la liste des buteurs existants
+  const koList = $('koScorersList');
+  if (koList) {
+    koList.innerHTML = '';
+    if (saved.scorers && saved.scorers.length) {
+      saved.scorers.forEach(s => addKOScorerRow(s));
+    }
+  }
 
   $('koModalOverlay').classList.add('open');
   $('koHome').focus();
+}
+
+// Affiche la zone tirs au but seulement si les deux scores sont égaux (et saisis)
+function updateKOPenaltyVisibility() {
+  const sh = $('koScoreH').value, sa = $('koScoreA').value;
+  const zone = $('koPenaltyZone');
+  if (!zone) return;
+  const bothFilled = sh !== '' && sa !== '';
+  const isDraw = bothFilled && parseInt(sh) === parseInt(sa);
+  zone.style.display = isDraw ? 'block' : 'none';
+}
+
+// Met à jour les noms d'équipes dans le sélecteur tirs au but
+function refreshKOPenaltyTeams() {
+  const home = $('koHome').value || 'Domicile';
+  const away = $('koAway').value || 'Extérieur';
+  const hOpt = $('koPenHomeOpt'), aOpt = $('koPenAwayOpt');
+  if (hOpt) hOpt.textContent = getFlag(home) + ' ' + home;
+  if (aOpt) aOpt.textContent = getFlag(away) + ' ' + away;
+}
+
+// Ajoute une ligne de saisie de buteur dans le modal KO
+function addKOScorerRow(data) {
+  const list = $('koScorersList');
+  if (!list) return;
+  const home = $('koHome').value || 'Domicile';
+  const away = $('koAway').value || 'Extérieur';
+  const row = document.createElement('div');
+  row.className = 'ko-scorer-row';
+  row.style.cssText = 'display:flex;gap:6px;margin-bottom:6px;align-items:center;';
+  row.innerHTML = `
+    <select class="ko-scorer-team ko-input" style="flex:1;min-width:0;padding:6px;">
+      <option value="">Équipe</option>
+      <option value="${home}" ${data && data.team === home ? 'selected' : ''}>${getFlag(home)} ${home}</option>
+      <option value="${away}" ${data && data.team === away ? 'selected' : ''}>${getFlag(away)} ${away}</option>
+    </select>
+    <input class="ko-scorer-name ko-input" type="text" placeholder="Nom du buteur" style="flex:2;min-width:0;padding:6px;" value="${data ? (data.name||'') : ''}">
+    <input class="ko-scorer-min ko-input" type="number" min="1" max="120" placeholder="min" style="width:55px;padding:6px;" value="${data ? (data.minute||'') : ''}">
+    <button type="button" onclick="this.closest('.ko-scorer-row').remove()" style="background:none;border:none;color:#e74c3c;font-size:20px;cursor:pointer;line-height:1;">×</button>
+  `;
+  list.appendChild(row);
+}
+
+// Met à jour les noms d'équipes dans les sélecteurs de buteurs quand on change home/away
+function refreshKOScorerTeams() {
+  const home = $('koHome').value || 'Domicile';
+  const away = $('koAway').value || 'Extérieur';
+  document.querySelectorAll('#koScorersList .ko-scorer-row').forEach(row => {
+    const sel = row.querySelector('.ko-scorer-team');
+    if (!sel) return;
+    const cur = sel.value;
+    sel.innerHTML = `
+      <option value="">Équipe</option>
+      <option value="${home}" ${cur === home ? 'selected' : ''}>${getFlag(home)} ${home}</option>
+      <option value="${away}" ${cur === away ? 'selected' : ''}>${getFlag(away)} ${away}</option>
+    `;
+  });
 }
 
 function closeKOModal() {
@@ -1470,6 +1611,14 @@ function closeKOModal() {
 
 function saveKOMatch() {
   if (!currentKOId) return;
+  // Collecter les buteurs saisis
+  const scorers = [];
+  document.querySelectorAll('#koScorersList .ko-scorer-row').forEach(row => {
+    const team = row.querySelector('.ko-scorer-team') ? row.querySelector('.ko-scorer-team').value : '';
+    const name = row.querySelector('.ko-scorer-name') ? row.querySelector('.ko-scorer-name').value.trim() : '';
+    const minute = row.querySelector('.ko-scorer-min') ? row.querySelector('.ko-scorer-min').value.trim() : '';
+    if (name) scorers.push({ team, name, minute });
+  });
   KO_STATE[currentKOId] = {
     home:    $('koHome').value.trim(),
     away:    $('koAway').value.trim(),
@@ -1478,9 +1627,21 @@ function saveKOMatch() {
     city:    $('koCity').value.trim(),
     scoreH:  $('koScoreH').value,
     scoreA:  $('koScoreA').value,
+    penH:    $('koPenH').value,
+    penA:    $('koPenA').value,
+    penWinner: $('koPenWinner').value,
+    scorers: scorers,
   };
   saveState({ ko: KO_STATE });
+  // Déclenche l'animation d'avion pour le perdant (équipe éliminée)
+  if (typeof checkEliminationFlyout === 'function') {
+    try { checkEliminationFlyout(currentKOId); } catch(e) {}
+  }
   renderBracket();
+  if (typeof renderScorers === 'function') {
+    const vs = $('view-scorers');
+    if (vs && vs.style.display !== 'none') renderScorers();
+  }
   closeKOModal();
 }
 
@@ -1640,6 +1801,25 @@ function renderScorers() {
     if (!s || !s.scorers || !s.scorers.length) return;
     const m = MATCHES.find(x => x.id === parseInt(matchId));
     s.scorers.forEach(scorer => {
+      if (!scorer.name || !scorer.name.trim()) return;
+      const key = scorer.name.trim().toLowerCase() + '|' + (scorer.team || '');
+      if (!scorerMap[key]) {
+        scorerMap[key] = {
+          name: scorer.name.trim(),
+          team: scorer.team || '—',
+          goals: 0,
+          minutes: []
+        };
+      }
+      scorerMap[key].goals++;
+      if (scorer.minute) scorerMap[key].minutes.push(scorer.minute + "'");
+    });
+  });
+
+  // Inclure aussi les buteurs des matchs de phase finale (bracket)
+  Object.values(KO_STATE).forEach(ko => {
+    if (!ko || !ko.scorers || !ko.scorers.length) return;
+    ko.scorers.forEach(scorer => {
       if (!scorer.name || !scorer.name.trim()) return;
       const key = scorer.name.trim().toLowerCase() + '|' + (scorer.team || '');
       if (!scorerMap[key]) {
