@@ -961,15 +961,11 @@
 
   <!-- Tabs -->
   <div class="tabs">
-    <button class="tab active" onclick="showView('calendar', this)">📅 Calendrier</button>
+    <button class="tab active" onclick="showView('today', this)">🔴 Match du jour</button>
+    <button class="tab" onclick="showView('calendar', this)">📅 Calendrier</button>
     <button class="tab" onclick="showView('groups', this)">🏆 Groupes</button>
-    <button class="tab" onclick="showView('knockout', this)">⚡ Phase Finale</button>
-    <button class="tab" onclick="showView('ranking', this)">📊 Classement</button>
     <button class="tab" onclick="showView('scorers', this)">⚽ Buteurs</button>
-    <button class="tab" onclick="showView('bestthirds', this)">🥉 Meilleurs 3es</button>
-    <button class="tab" onclick="showView('pronostics', this)">🎯 Pronostics</button>
-    <button class="tab" onclick="showView('ambassadors', this)">🏆 Ambassadeurs</button>
-    <button class="tab" onclick="showView('starred', this)">⭐ Favoris</button>
+    <button class="tab" onclick="showView('knockout', this)">⚡ Phase Finale</button>
   </div>
 
   <!-- CALENDAR VIEW -->
@@ -1014,6 +1010,23 @@
   <!-- GROUPS VIEW -->
   <div id="view-groups">
     <div class="groups-grid" id="groupsGrid"></div>
+    <!-- Classement fusionné -->
+    <div style="margin-top:28px;">
+      <div class="phase-title" style="font-size:16px;font-weight:700;color:var(--accent);margin-bottom:14px;">📊 Classement</div>
+      <div class="ranking-wrap">
+        <div style="font-family:var(--font-ui);font-size:13px;color:var(--text2);margin-bottom:16px;">
+          Classement mis à jour en temps réel. Les 2 premiers de chaque groupe (vert) et les 8 meilleurs 3es (jaune) se qualifient.
+        </div>
+        <div id="rankingContent"></div>
+      </div>
+    </div>
+    <!-- Meilleurs 3es fusionné -->
+    <div style="margin-top:28px;">
+      <div class="phase-title" style="font-size:16px;font-weight:700;color:var(--accent);margin-bottom:14px;">🥉 Meilleurs 3es</div>
+      <div class="ranking-wrap">
+        <div id="bestThirdsContent"></div>
+      </div>
+    </div>
   </div>
 
   <!-- KNOCKOUT VIEW -->
@@ -1022,46 +1035,13 @@
       <div style="font-family:var(--font-body);font-size:14px;color:var(--text2);margin-bottom:20px;">
         La phase à élimination directe débute le <strong style="color:var(--accent)">28 juin 2026</strong> avec les 32es de finale (M73–M88), jusqu'à la Grande Finale le <strong style="color:var(--accent)">19 juillet</strong> au MetLife Stadium, New York.
       </div>
-      <button onclick="autoFillBracket()" style="margin:10px auto;display:block;padding:10px 20px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer;">⚡ Remplir le bracket automatiquement</button>
       <div id="bracketContent"></div>
     </div>
   </div>
 
-  <!-- STARRED VIEW -->
-  <div id="view-starred">
-    <div style="font-family:var(--font-ui);font-size:13px;color:var(--text2);margin-bottom:16px;">
-      Marquez des matchs avec ⭐ pour les retrouver ici.
-    </div>
-    <div class="matches-grid" id="starredContainer">
-      <div style="color:var(--text2);font-family:var(--font-ui);font-size:13px;grid-column:1/-1;padding:40px;text-align:center;border:2px dashed var(--border);border-radius:12px;">
-        Aucun match favori pour l'instant.<br>Cliquez sur ⭐ sur un match pour l'ajouter ici.
-      </div>
-    </div>
-  </div>
-
-  <!-- PRONOSTICS VIEW -->
-  <div id="view-pronostics" style="display:none;">
-    <div style="font-family:var(--font-ui);font-size:13px;color:var(--text2);margin-bottom:16px;">
-      Préds le score avant chaque match. 3 pts pour le bon résultat, 5 pts si le score exact !
-    </div>
-    <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
-      <button onclick="showPronoTab('predictions')" id="prono-tab-pred" class="comment-submit-btn" style="flex:1;min-width:120px;">🎯 Mes Pronostics</button>
-      <button onclick="showPronoTab('ranking')" id="prono-tab-rank" class="filter-reset-btn" style="flex:1;min-width:120px;">🏆 Classement</button>
-    </div>
-    <div id="prono-view-predictions"><div class="prono-grid" id="pronoGrid"></div></div>
-    <div id="prono-view-ranking" style="display:none;">
-      <div class="prono-ranking-wrap" id="pronoRankingContent"></div>
-    </div>
-  </div>
-
-  <!-- RANKING VIEW -->
-  <div id="view-ranking" style="display:none;">
-    <div class="ranking-wrap">
-      <div style="font-family:var(--font-ui);font-size:13px;color:var(--text2);margin-bottom:20px;">
-        Classement mis à jour en temps réel depuis les scores saisis. Les 2 premiers de chaque groupe (vert) et les 8 meilleurs 3es (jaune) se qualifient.
-      </div>
-      <div id="rankingContent"></div>
-    </div>
+  <!-- TODAY VIEW (Match du jour) -->
+  <div id="view-today" style="display:none;">
+    <div id="todayContainer"></div>
   </div>
 
   <!-- SCORERS VIEW -->
@@ -1071,12 +1051,6 @@
         Buteurs enregistrés depuis les scores saisis. Ajoutez les buteurs en cliquant sur un match.
       </div>
       <div id="scorersContent"></div>
-    </div>
-  </div>
-
-  <div id="view-bestthirds" style="display:none;">
-    <div class="ranking-wrap">
-      <div id="bestThirdsContent"></div>
     </div>
   </div>
 

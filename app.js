@@ -275,6 +275,43 @@ function renderMatchCard(m, container) {
   container.appendChild(div);
 }
 
+// Affiche uniquement les matchs d'aujourd'hui
+function renderToday() {
+  const cont = $('todayContainer');
+  if (!cont) return;
+  cont.innerHTML = '';
+  const now = new Date();
+  const todayDay = now.getDate();
+  const todayMonth = now.getMonth() + 1;
+  const months = {'juin':6,'juil':7,'juil.':7};
+
+  const todayMatches = MATCHES.filter(m => {
+    const parts = m.date.trim().split(' ');
+    const day = parseInt(parts[0]);
+    const month = months[parts[1]] || 0;
+    return day === todayDay && month === todayMonth;
+  });
+
+  if (!todayMatches.length) {
+    cont.innerHTML = '<div style="text-align:center;padding:50px 20px;font-family:var(--font-ui);color:var(--text2);font-size:15px;">⚽ Pas de match de groupe aujourd\'hui.<br><span style="font-size:13px;">Consulte le Calendrier ou la Phase Finale.</span></div>';
+    return;
+  }
+
+  // Titre du jour
+  const header = document.createElement('div');
+  header.className = 'phase-title';
+  header.style.cssText = 'background:linear-gradient(135deg,var(--accent),#d4213d);color:#fff;border-radius:10px;padding:12px 16px;font-size:16px;font-weight:700;display:flex;align-items:center;gap:8px;margin-bottom:16px;';
+  header.innerHTML = '🔴 MATCH DU JOUR · ' + todayMatches[0].date + ' 2026';
+  cont.appendChild(header);
+
+  const grid = document.createElement('div');
+  grid.className = 'matches-grid';
+  // Trier par heure
+  todayMatches.sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+  todayMatches.forEach(m => renderMatchCard(m, grid));
+  cont.appendChild(grid);
+}
+
 function renderCalendar() {
   const cont = $('matchesContainer');
   cont.innerHTML = '';
@@ -283,44 +320,6 @@ function renderCalendar() {
     if (!byDate[m.date]) byDate[m.date] = [];
     byDate[m.date].push(m);
   });
-  // Ajouter les matchs de phase finale dont les 2 équipes sont connues
-  if (typeof KNOCKOUT_ROUNDS !== 'undefined') {
-    KNOCKOUT_ROUNDS.forEach(round => {
-      round.matches.forEach(km => {
-        const saved = KO_STATE[km.id] || {};
-        const home = saved.home || km.home || '';
-        const away = saved.away || km.away || '';
-        if (isPlaceholderTeam(home) || isPlaceholderTeam(away)) return; // équipes pas encore connues
-        const koMatch = {
-          id: km.id,
-          home: home,
-          away: away,
-          date: saved.time && saved.date ? saved.date : km.date,
-          day: round.round,
-          time: saved.time || km.time || '',
-          stadium: saved.stadium || km.stadium || '',
-          city: saved.city || km.city || '',
-          group: 'KO',
-          label: round.round + ' · ' + km.label,
-          isKO: true,
-        };
-        // Transférer le score KO vers SCORES pour qu'il s'affiche sur le calendrier
-        if (saved.scoreH !== undefined && saved.scoreH !== '' &&
-            saved.scoreA !== undefined && saved.scoreA !== '' &&
-            !isNaN(parseInt(saved.scoreH)) && !isNaN(parseInt(saved.scoreA))) {
-          if (!SCORES[km.id]) {
-            SCORES[km.id] = {
-              home: parseInt(saved.scoreH),
-              away: parseInt(saved.scoreA),
-              scorers: saved.scorers || [],
-            };
-          }
-        }
-        if (!byDate[koMatch.date]) byDate[koMatch.date] = [];
-        byDate[koMatch.date].push(koMatch);
-      });
-    });
-  }
   const monthOrder = {'juin':6,'juil':7,'juil.':7};
   const sortedDates = Object.keys(byDate).sort((a, b) => {
     const partsA = a.split(' ');
@@ -928,7 +927,7 @@ function showView(view, btn) {
 }
 
 function showViewInternal(view, btn) {
-  ['calendar','groups','knockout','starred','ranking','scorers','bestthirds','pronostics','ambassadors'].forEach(v => {
+  ['today','calendar','groups','knockout','scorers'].forEach(v => {
     const el = $('view-' + v);
     if (el) el.style.display = 'none';
   });
@@ -936,12 +935,15 @@ function showViewInternal(view, btn) {
   if (btn) btn.classList.add('active');
   const el = $('view-' + view);
   if (el) el.style.display = 'block';
-  if (view === 'starred')      renderStarred();
-  if (view === 'ranking')      renderRanking();
+  if (view === 'today')        renderToday();
+  if (view === 'calendar')     renderCalendar();
+  if (view === 'groups') {
+    renderGroups();
+    if (typeof renderRanking === 'function') renderRanking();
+    if (typeof renderBestThirds === 'function') renderBestThirds();
+  }
   if (view === 'scorers')      renderScorers();
-  if (view === 'bestthirds')   renderBestThirds();
-  if (view === 'pronostics')   renderPronostics();
-  if (view === 'ambassadors')  renderAmbassadors();
+  if (view === 'knockout')     renderBracket();
 }
 
 const FONT_URLS = {
@@ -1109,9 +1111,8 @@ function saveScore() {
     parent.appendChild(tmp.firstChild);
     applyFilters();
   }
-  if ($('view-starred').style.display !== 'none') {
-    renderStarred();
-  }
+  const _vs = $('view-starred');
+  if (_vs && _vs.style.display !== 'none') renderStarred();
   renderHaitiMatches();
   // Rafraîchir classement, groupes et buteurs immédiatement
   try { if (typeof renderRanking === 'function') renderRanking(); } catch(e) {}
@@ -1146,7 +1147,8 @@ function clearScore() {
     parent.appendChild(tmp.firstChild);
     applyFilters();
   }
-  if ($('view-starred').style.display !== 'none') renderStarred();
+  const _vs2 = $('view-starred');
+  if (_vs2 && _vs2.style.display !== 'none') renderStarred();
   closeModal();
 }
 
@@ -3161,6 +3163,7 @@ function checkLiveMatches() {
   });
 }
 
+renderToday();
 renderCalendar();
 renderGroups();
 renderBracket();

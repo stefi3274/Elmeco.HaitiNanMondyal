@@ -1,6 +1,6 @@
 // ── Service Worker AYITI nan Mondyal 2026 ──
 // Incrémente CACHE_VERSION à chaque déploiement pour invalider le cache
-const CACHE_VERSION = 'v20260628-022';
+const CACHE_VERSION = 'v20260628-025';
 const CACHE_NAME = `ayiti-mondyal-${CACHE_VERSION}`;
 const ASSETS = [
   './',
