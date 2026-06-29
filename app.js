@@ -21,18 +21,18 @@ const KNOCKOUT_ROUNDS = [
     round:'16es de finale', dates:'28 juin – 3 juillet', color:'#7c3aed',
     matches:[
       {id:'ko73', label:'M73', home:'2e Gr.A',         away:'2e Gr.B',          date:'28 juin', time:'15h00', stadium:'SoFi Stadium',           city:'Los Angeles'},
-      {id:'ko76', label:'M76', home:'1er Gr.C',        away:'2e Gr.F',          date:'28 juin', time:'13h00', stadium:'NRG Stadium',             city:'Houston'},
+      {id:'ko76', label:'M76', home:'1er Gr.C',        away:'2e Gr.F',          date:'29 juin', time:'13h00', stadium:'NRG Stadium',             city:'Houston'},
       {id:'ko74', label:'M74', home:'1er Gr.E',        away:'3e Gr.A/B/C/D/F', date:'29 juin', time:'16h30', stadium:'Gillette Stadium',        city:'Boston'},
       {id:'ko75', label:'M75', home:'1er Gr.F',        away:'2e Gr.C',          date:'29 juin', time:'21h00', stadium:'Estadio BBVA',            city:'Monterrey'},
       {id:'ko78', label:'M78', home:'2e Gr.E',         away:'2e Gr.I',          date:'30 juin', time:'13h00', stadium:'AT&T Stadium',            city:'Dallas'},
       {id:'ko77', label:'M77', home:'1er Gr.I',        away:'3e Gr.C/D/F/G/H', date:'30 juin', time:'17h00', stadium:'MetLife Stadium',         city:'New York'},
-      {id:'ko79', label:'M79', home:'1er Gr.A',        away:'3e Gr.C/E/F/H/I', date:'1er juil.', time:'21h00', stadium:'Estadio Azteca',        city:'Mexico'},
+      {id:'ko79', label:'M79', home:'1er Gr.A',        away:'3e Gr.C/E/F/H/I', date:'30 juin', time:'21h00', stadium:'Estadio Azteca',        city:'Mexico'},
       {id:'ko80', label:'M80', home:'1er Gr.L',        away:'3e Gr.E/H/I/J/K', date:'1er juil.', time:'12h00', stadium:'Mercedes-Benz Stadium', city:'Atlanta'},
       {id:'ko82', label:'M82', home:'1er Gr.G',        away:'3e Gr.A/E/H/I/J', date:'1er juil.', time:'16h00', stadium:'Lumen Field',           city:'Seattle'},
-      {id:'ko81', label:'M81', home:'1er Gr.D',        away:'3e Gr.B/E/F/I/J', date:'2 juil.',  time:'21h00', stadium:"Levi's Stadium",         city:'San Francisco'},
+      {id:'ko81', label:'M81', home:'1er Gr.D',        away:'3e Gr.B/E/F/I/J', date:'1er juil.',  time:'20h00', stadium:"Levi's Stadium",         city:'San Francisco'},
       {id:'ko84', label:'M84', home:'1er Gr.H',        away:'2e Gr.J',          date:'2 juil.',  time:'15h00', stadium:'SoFi Stadium',           city:'Los Angeles'},
       {id:'ko83', label:'M83', home:'2e Gr.K',         away:'2e Gr.L',          date:'2 juil.',  time:'21h00', stadium:'BMO Field',              city:'Toronto'},
-      {id:'ko85', label:'M85', home:'1er Gr.B',        away:'3e Gr.E/F/G/I/J', date:'3 juil.',  time:'21h00', stadium:'BC Place',               city:'Vancouver'},
+      {id:'ko85', label:'M85', home:'1er Gr.B',        away:'3e Gr.E/F/G/I/J', date:'2 juil.',  time:'23h00', stadium:'BC Place',               city:'Vancouver'},
       {id:'ko86', label:'M86', home:'1er Gr.J',        away:'2e Gr.H',          date:'3 juil.',  time:'15h00', stadium:'Hard Rock Stadium',      city:'Miami'},
       {id:'ko87', label:'M87', home:'1er Gr.K',        away:'3e Gr.D/E/I/J/L', date:'3 juil.',  time:'21h00', stadium:'Estadio Azteca',         city:'Mexico'},
       {id:'ko88', label:'M88', home:'2e Gr.D',         away:'2e Gr.G',          date:'3 juil.',  time:'14h00', stadium:'AT&T Stadium',           city:'Dallas'},
@@ -275,40 +275,92 @@ function renderMatchCard(m, container) {
   container.appendChild(div);
 }
 
-// Affiche uniquement les matchs d'aujourd'hui
+// Affiche uniquement les matchs d'aujourd'hui (groupe ET phase finale)
 function renderToday() {
   const cont = $('todayContainer');
   if (!cont) return;
   cont.innerHTML = '';
+  // Charger l'état du bracket (équipes/scores saisis) depuis le stockage
+  const _st = loadState();
+  if (_st.ko) Object.assign(KO_STATE, _st.ko);
+  if (typeof propagateWinners === 'function') {
+    try { propagateWinners(); } catch(e) {}
+  }
   const now = new Date();
   const todayDay = now.getDate();
   const todayMonth = now.getMonth() + 1;
   const months = {'juin':6,'juil':7,'juil.':7};
 
-  const todayMatches = MATCHES.filter(m => {
-    const parts = m.date.trim().split(' ');
+  function estAujourdhui(dateStr) {
+    if (!dateStr) return false;
+    const parts = dateStr.trim().split(' ');
     const day = parseInt(parts[0]);
     const month = months[parts[1]] || 0;
     return day === todayDay && month === todayMonth;
-  });
+  }
 
-  if (!todayMatches.length) {
-    cont.innerHTML = '<div style="text-align:center;padding:50px 20px;font-family:var(--font-ui);color:var(--text2);font-size:15px;">⚽ Pas de match de groupe aujourd\'hui.<br><span style="font-size:13px;">Consulte le Calendrier ou la Phase Finale.</span></div>';
+  // Matchs de groupe d'aujourd'hui
+  const todayMatches = MATCHES.filter(m => estAujourdhui(m.date));
+
+  // Matchs de phase finale d'aujourd'hui (équipes connues uniquement)
+  const todayKO = [];
+  if (typeof KNOCKOUT_ROUNDS !== 'undefined') {
+    KNOCKOUT_ROUNDS.forEach(round => {
+      round.matches.forEach(km => {
+        const saved = KO_STATE[km.id] || {};
+        const date = saved.date || km.date;
+        if (!estAujourdhui(date)) return;
+        const home = saved.home || km.home || '';
+        const away = saved.away || km.away || '';
+        // Inclure même avec placeholder ? Non : seulement si équipes connues
+        if (isPlaceholderTeam(home) || isPlaceholderTeam(away)) return;
+        todayKO.push({
+          id: km.id,
+          home: home,
+          away: away,
+          date: date,
+          day: round.round,
+          time: saved.time || km.time || '',
+          stadium: saved.stadium || km.stadium || '',
+          city: saved.city || km.city || '',
+          group: 'KO',
+          label: round.round + ' · ' + km.label,
+        });
+        // Transférer le score KO vers SCORES pour l'affichage
+        if (saved.scoreH !== undefined && saved.scoreH !== '' &&
+            saved.scoreA !== undefined && saved.scoreA !== '' &&
+            !isNaN(parseInt(saved.scoreH)) && !isNaN(parseInt(saved.scoreA))) {
+          if (!SCORES[km.id]) {
+            SCORES[km.id] = {
+              home: parseInt(saved.scoreH),
+              away: parseInt(saved.scoreA),
+              scorers: saved.scorers || [],
+            };
+          }
+        }
+      });
+    });
+  }
+
+  const allToday = todayMatches.concat(todayKO);
+
+  if (!allToday.length) {
+    cont.innerHTML = '<div style="text-align:center;padding:50px 20px;font-family:var(--font-ui);color:var(--text2);font-size:15px;">⚽ Pas de match aujourd\'hui.<br><span style="font-size:13px;">Consulte le Calendrier ou la Phase Finale.</span></div>';
     return;
   }
 
   // Titre du jour
+  const dateLabel = allToday[0].date;
   const header = document.createElement('div');
   header.className = 'phase-title';
   header.style.cssText = 'background:linear-gradient(135deg,var(--accent),#d4213d);color:#fff;border-radius:10px;padding:12px 16px;font-size:16px;font-weight:700;display:flex;align-items:center;gap:8px;margin-bottom:16px;';
-  header.innerHTML = '🔴 MATCH DU JOUR · ' + todayMatches[0].date + ' 2026';
+  header.innerHTML = '🔴 MATCH DU JOUR · ' + dateLabel + ' 2026';
   cont.appendChild(header);
 
   const grid = document.createElement('div');
   grid.className = 'matches-grid';
-  // Trier par heure
-  todayMatches.sort((a, b) => (a.time || '').localeCompare(b.time || ''));
-  todayMatches.forEach(m => renderMatchCard(m, grid));
+  allToday.sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+  allToday.forEach(m => renderMatchCard(m, grid));
   cont.appendChild(grid);
 }
 
