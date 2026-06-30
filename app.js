@@ -840,7 +840,18 @@ function submitComment(matchId) {
 }
 
 const ADMIN_PWD = '123Touppouyo';
-let adminAuthenticated = false;
+let adminAuthenticated = (function() {
+  try { return localStorage.getItem('ayiti_admin') === 'oui'; } catch(e) { return false; }
+})();
+// Si déjà admin (mémorisé), activer le mode admin dès le chargement
+if (adminAuthenticated) {
+  window.adminAuthenticated = true;
+  document.addEventListener('DOMContentLoaded', function() {
+    document.body.classList.add('is-admin');
+    document.body.classList.add('admin-mode');
+    try { if (typeof window.startMasterMode === 'function') window.startMasterMode(); } catch(e) {}
+  });
+}
 
 function openAdmin() {
   if (adminAuthenticated) { showAdminPanel(); return; }
@@ -864,6 +875,8 @@ function checkAdminPwd() {
   if (val === ADMIN_PWD) {
     adminAuthenticated = true;
     window.adminAuthenticated = true;
+    // Mémoriser le statut admin sur cet appareil
+    try { localStorage.setItem('ayiti_admin', 'oui'); } catch(e) {}
     document.body.classList.add('is-admin');
     document.body.classList.add('admin-mode');
     const ov = $('adminLoginOverlay');
@@ -882,6 +895,19 @@ function checkAdminPwd() {
 function showAdminPanel() {
   $('adminPanel').style.display = 'block';
   renderAdminComments();
+}
+
+// Déconnexion admin : retire le statut mémorisé sur cet appareil
+function logoutAdmin() {
+  adminAuthenticated = false;
+  window.adminAuthenticated = false;
+  try { localStorage.removeItem('ayiti_admin'); } catch(e) {}
+  document.body.classList.remove('is-admin');
+  document.body.classList.remove('admin-mode');
+  const panel = $('adminPanel');
+  if (panel) panel.style.display = 'none';
+  if (typeof applyFilters === 'function') applyFilters();
+  alert('Déconnecté du mode admin sur cet appareil.');
 }
 
 function closeAdminPanel() {
