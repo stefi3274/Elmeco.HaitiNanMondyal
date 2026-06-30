@@ -985,7 +985,6 @@
     <button class="tab" onclick="showView('calendar', this)">📅 Calendrier</button>
     <button class="tab" onclick="showView('groups', this)">🏆 Groupes</button>
     <button class="tab" onclick="showView('scorers', this)">⚽ Buteurs</button>
-    <button class="tab" onclick="showView('knockout', this)">⚡ Phase Finale</button>
   </div>
 
   <!-- CALENDAR VIEW -->
@@ -1050,15 +1049,6 @@
   </div>
 
   <!-- KNOCKOUT VIEW -->
-  <div id="view-knockout">
-    <div class="bracket-wrap">
-      <div style="font-family:var(--font-body);font-size:14px;color:var(--text2);margin-bottom:20px;">
-        La phase à élimination directe débute le <strong style="color:var(--accent)">28 juin 2026</strong> avec les 32es de finale (M73–M88), jusqu'à la Grande Finale le <strong style="color:var(--accent)">19 juillet</strong> au MetLife Stadium, New York.
-      </div>
-      <div id="bracketContent"></div>
-    </div>
-  </div>
-
   <!-- TODAY VIEW (Match du jour) -->
   <div id="view-today" style="display:none;">
     <div id="todayContainer"></div>
@@ -1094,6 +1084,19 @@
       <div class="modal-meta" id="mMeta"></div>
     </div>
     <div class="modal-body">
+      <!-- Édition des équipes (phase finale uniquement) -->
+      <div id="koTeamsSection" style="display:none;margin-bottom:18px;padding:12px;background:rgba(232,185,35,0.08);border:1px solid rgba(232,185,35,0.25);border-radius:10px;">
+        <div style="font-family:var(--font-ui);font-size:12px;font-weight:700;color:var(--accent);margin-bottom:10px;">⚡ Définir les équipes qualifiées</div>
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
+          <label style="font-size:11px;color:var(--text2);width:60px;">Domicile</label>
+          <input class="score-input" id="mHomeTeamInput" type="text" placeholder="Ex : Brésil" style="flex:1;width:auto;text-align:left;padding:8px 10px;font-size:14px;">
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <label style="font-size:11px;color:var(--text2);width:60px;">Extérieur</label>
+          <input class="score-input" id="mAwayTeamInput" type="text" placeholder="Ex : Japon" style="flex:1;width:auto;text-align:left;padding:8px 10px;font-size:14px;">
+        </div>
+      </div>
+
       <!-- Score -->
       <div class="score-inputs">
         <div class="score-input-wrap">
@@ -1105,6 +1108,16 @@
           <span class="score-input-label" id="mAwayLabelScore"></span>
           <input class="score-input" id="mScoreAway" type="number" min="0" max="30" placeholder="0">
         </div>
+      </div>
+
+      <!-- Tirs au but (phase finale, si match nul) -->
+      <div id="koPenaltySection" style="display:none;margin:14px 0;padding:12px;background:rgba(212,33,61,0.08);border:1px solid rgba(212,33,61,0.25);border-radius:10px;">
+        <div style="font-family:var(--font-ui);font-size:12px;font-weight:700;color:#d4213d;margin-bottom:10px;">🥅 Match nul — Qui se qualifie aux tirs au but ?</div>
+        <select id="mPenWinner" style="width:100%;padding:9px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:14px;">
+          <option value="">-- À déterminer --</option>
+          <option value="home" id="mPenHomeOpt">Domicile</option>
+          <option value="away" id="mPenAwayOpt">Extérieur</option>
+        </select>
       </div>
 
       <!-- Scorers -->

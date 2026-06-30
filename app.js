@@ -119,6 +119,20 @@ let isDark      = _state.isDark !== undefined ? _state.isDark : true;
 if (_state.scores) Object.assign(SCORES, _state.scores);
 if (_state.ko) Object.assign(KO_STATE, _state.ko);
 
+// Applique les équipes KO mémorisées (homeTeam/awayTeam dans SCORES) aux matchs
+function applyKOTeams() {
+  if (typeof MATCHES === 'undefined') return;
+  MATCHES.forEach(m => {
+    if (!['F16','F8','QF','SF','TP','FIN'].includes(m.group)) return;
+    const s = SCORES[m.id];
+    if (!s) return;
+    if (s.homeTeam) m.home = s.homeTeam;
+    if (s.awayTeam) m.away = s.awayTeam;
+  });
+  // Propager ensuite les vainqueurs (W73 -> équipe) si possible
+  try { if (typeof propagateKnockout === 'function') propagateKnockout(); } catch(e) {}
+}
+
 function getFlag(name) { return FLAGS[name] || '🏴'; }
 
 // Détecte si une "équipe" est en réalité un placeholder non résolu
@@ -134,8 +148,6 @@ function isPlaceholderTeam(v) {
 }
 
 function renderMatchCard(m, container) {
-  // Sécurité : ne jamais afficher un match dont une équipe est encore un placeholder
-  if (isPlaceholderTeam(m.home) || isPlaceholderTeam(m.away)) return;
   const isStarred = starred.includes(m.id);
   const color = GROUP_COLORS[m.group] || GROUP_COLORS.KO;
   const isFeat = m.featured || FEATURED.some(f => f.includes(m.home.split(' ')[0]) || f.includes(m.away.split(' ')[0]));
@@ -275,17 +287,11 @@ function renderMatchCard(m, container) {
   container.appendChild(div);
 }
 
-// Affiche uniquement les matchs d'aujourd'hui (groupe ET phase finale)
+// Affiche uniquement les matchs d'aujourd'hui (groupe ET phase finale, depuis MATCHES)
 function renderToday() {
   const cont = $('todayContainer');
   if (!cont) return;
   cont.innerHTML = '';
-  // Charger l'état du bracket (équipes/scores saisis) depuis le stockage
-  const _st = loadState();
-  if (_st.ko) Object.assign(KO_STATE, _st.ko);
-  if (typeof propagateWinners === 'function') {
-    try { propagateWinners(); } catch(e) {}
-  }
   const now = new Date();
   const todayDay = now.getDate();
   const todayMonth = now.getMonth() + 1;
@@ -299,53 +305,11 @@ function renderToday() {
     return day === todayDay && month === todayMonth;
   }
 
-  // Matchs de groupe d'aujourd'hui
-  const todayMatches = MATCHES.filter(m => estAujourdhui(m.date));
-
-  // Matchs de phase finale d'aujourd'hui (équipes connues uniquement)
-  const todayKO = [];
-  if (typeof KNOCKOUT_ROUNDS !== 'undefined') {
-    KNOCKOUT_ROUNDS.forEach(round => {
-      round.matches.forEach(km => {
-        const saved = KO_STATE[km.id] || {};
-        const date = saved.date || km.date;
-        if (!estAujourdhui(date)) return;
-        const home = saved.home || km.home || '';
-        const away = saved.away || km.away || '';
-        // Inclure même avec placeholder ? Non : seulement si équipes connues
-        if (isPlaceholderTeam(home) || isPlaceholderTeam(away)) return;
-        todayKO.push({
-          id: km.id,
-          home: home,
-          away: away,
-          date: date,
-          day: round.round,
-          time: saved.time || km.time || '',
-          stadium: saved.stadium || km.stadium || '',
-          city: saved.city || km.city || '',
-          group: 'KO',
-          label: round.round + ' · ' + km.label,
-        });
-        // Transférer le score KO vers SCORES pour l'affichage
-        if (saved.scoreH !== undefined && saved.scoreH !== '' &&
-            saved.scoreA !== undefined && saved.scoreA !== '' &&
-            !isNaN(parseInt(saved.scoreH)) && !isNaN(parseInt(saved.scoreA))) {
-          if (!SCORES[km.id]) {
-            SCORES[km.id] = {
-              home: parseInt(saved.scoreH),
-              away: parseInt(saved.scoreA),
-              scorers: saved.scorers || [],
-            };
-          }
-        }
-      });
-    });
-  }
-
-  const allToday = todayMatches.concat(todayKO);
+  // Tous les matchs d'aujourd'hui (groupe + phase finale), depuis MATCHES
+  const allToday = MATCHES.filter(m => estAujourdhui(m.date));
 
   if (!allToday.length) {
-    cont.innerHTML = '<div style="text-align:center;padding:50px 20px;font-family:var(--font-ui);color:var(--text2);font-size:15px;">⚽ Pas de match aujourd\'hui.<br><span style="font-size:13px;">Consulte le Calendrier ou la Phase Finale.</span></div>';
+    cont.innerHTML = '<div style="text-align:center;padding:50px 20px;font-family:var(--font-ui);color:var(--text2);font-size:15px;">⚽ Pas de match aujourd\'hui.<br><span style="font-size:13px;">Consulte le Calendrier pour les prochains matchs.</span></div>';
     return;
   }
 
@@ -619,6 +583,7 @@ function renderBracket() {
   }
 
   const cont = $('bracketContent');
+  if (!cont) return;
   cont.innerHTML = '';
   const grid = document.createElement('div');
   grid.className = 'bracket-grid';
@@ -979,7 +944,7 @@ function showView(view, btn) {
 }
 
 function showViewInternal(view, btn) {
-  ['today','calendar','groups','knockout','scorers'].forEach(v => {
+  ['today','calendar','groups','scorers'].forEach(v => {
     const el = $('view-' + v);
     if (el) el.style.display = 'none';
   });
@@ -995,7 +960,6 @@ function showViewInternal(view, btn) {
     if (typeof renderBestThirds === 'function') renderBestThirds();
   }
   if (view === 'scorers')      renderScorers();
-  if (view === 'knockout')     renderBracket();
 }
 
 const FONT_URLS = {
@@ -1080,9 +1044,34 @@ function openModal(matchId) {
   $('mAwayLabelScore').textContent = m.away.substring(0, 8).toUpperCase();
   $('mMeta').textContent = `📅 ${m.date} · 🏟️ ${m.stadium}, ${m.city}`;
 
+  // Détection match de phase finale
+  const isKO = ['F16','F8','QF','SF','TP','FIN'].includes(m.group);
+  const koTeams = $('koTeamsSection');
+  if (koTeams) {
+    koTeams.style.display = isKO ? 'block' : 'none';
+    if (isKO) {
+      // Pré-remplir avec les équipes déjà saisies (ou vide si placeholder)
+      $('mHomeTeamInput').value = isPlaceholderKO(m.home) ? '' : m.home;
+      $('mAwayTeamInput').value = isPlaceholderKO(m.away) ? '' : m.away;
+      $('mHomeTeamInput').placeholder = 'Ex : ' + m.home;
+      $('mAwayTeamInput').placeholder = 'Ex : ' + m.away;
+    }
+  }
+
   const score = SCORES[matchId];
   $('mScoreHome').value = score ? score.home : '';
   $('mScoreAway').value = score ? score.away : '';
+
+  // Tirs au but (KO uniquement)
+  const koPen = $('koPenaltySection');
+  if (koPen) {
+    $('mPenHomeOpt').textContent = (m.home && !isPlaceholderKO(m.home)) ? m.home : 'Domicile';
+    $('mPenAwayOpt').textContent = (m.away && !isPlaceholderKO(m.away)) ? m.away : 'Extérieur';
+    $('mPenWinner').value = score && score.pen ? score.pen : '';
+    updateModalPenaltyVisibility();
+  }
+  $('mScoreHome').oninput = updateModalPenaltyVisibility;
+  $('mScoreAway').oninput = updateModalPenaltyVisibility;
 
   const list = $('scorersList');
   list.innerHTML = '';
@@ -1092,6 +1081,30 @@ function openModal(matchId) {
 
   $('modalOverlay').classList.add('open');
   $('mScoreHome').focus();
+}
+
+// Détecte un placeholder KO (format data.js : 1A, 2B, 3A/3B/.., W73, L73, G1)
+function isPlaceholderKO(v) {
+  if (!v) return true;
+  v = String(v).trim();
+  if (/^[12][A-L]$/.test(v)) return true;        // 1A, 2B
+  if (/^[GH][12]$/.test(v)) return true;          // G1, H2
+  if (/^[12][GH]$/.test(v)) return true;
+  if (/\//.test(v)) return true;                  // 3A/3B/3C...
+  if (/^[WL]\d+$/.test(v)) return true;           // W73, L73
+  if (/^3[A-L]/.test(v)) return true;             // 3A...
+  return false;
+}
+
+// Affiche la zone tirs au but seulement si match KO nul
+function updateModalPenaltyVisibility() {
+  const koPen = $('koPenaltySection');
+  if (!koPen) return;
+  const m = MATCHES.find(x => x.id === currentModalId);
+  const isKO = m && ['F16','F8','QF','SF','TP','FIN'].includes(m.group);
+  const sh = $('mScoreHome').value, sa = $('mScoreAway').value;
+  const isDraw = sh !== '' && sa !== '' && parseInt(sh) === parseInt(sa);
+  koPen.style.display = (isKO && isDraw) ? 'block' : 'none';
 }
 
 function closeModal() {
@@ -1136,12 +1149,37 @@ function saveScore() {
     if (name) scorers.push({ team, name, minute });
   });
 
+  const m = MATCHES.find(x => x.id === currentModalId);
+  const isKO = m && ['F16','F8','QF','SF','TP','FIN'].includes(m.group);
+
+  // Pour les matchs KO : appliquer les équipes saisies
+  let koHomeTeam, koAwayTeam, koPen;
+  if (isKO) {
+    const ht = $('mHomeTeamInput') ? $('mHomeTeamInput').value.trim() : '';
+    const at = $('mAwayTeamInput') ? $('mAwayTeamInput').value.trim() : '';
+    if (ht) { m.home = ht; koHomeTeam = ht; }
+    if (at) { m.away = at; koAwayTeam = at; }
+    // Tirs au but si match nul
+    if (homeVal !== '' && awayVal !== '' && parseInt(homeVal) === parseInt(awayVal)) {
+      koPen = $('mPenWinner') ? $('mPenWinner').value : '';
+    }
+  }
+
   if (homeVal !== '' && awayVal !== '') {
     SCORES[currentModalId] = {
       home: parseInt(homeVal),
       away: parseInt(awayVal),
       scorers
     };
+    if (koPen) SCORES[currentModalId].pen = koPen;
+  } else if (isKO && (koHomeTeam || koAwayTeam)) {
+    // Équipes saisies sans score encore : on garde quand même un enregistrement
+    SCORES[currentModalId] = SCORES[currentModalId] || { scorers: [] };
+  }
+  // Mémoriser les équipes KO dans SCORES (persisté + Firebase) pour survivre au rechargement
+  if (isKO && SCORES[currentModalId]) {
+    if (koHomeTeam) SCORES[currentModalId].homeTeam = koHomeTeam;
+    if (koAwayTeam) SCORES[currentModalId].awayTeam = koAwayTeam;
   }
   saveState({ scores: SCORES });
 
@@ -1153,7 +1191,11 @@ function saveScore() {
   // Propage les vainqueurs en phase finale (8es -> finale)
   try { if (typeof propagateKnockout === 'function') propagateKnockout(); } catch(e) {}
 
-  const m = MATCHES.find(x => x.id === currentModalId);
+  // Avion d'adieu pour le perdant d'un match KO terminé
+  if (isKO && typeof checkEliminationPlane === 'function') {
+    try { checkEliminationPlane(currentModalId); } catch(e) {}
+  }
+
   const oldCard = document.querySelector(`.match-card[data-id="${currentModalId}"]`);
   if (oldCard) {
     const parent = oldCard.parentNode;
@@ -1162,6 +1204,11 @@ function saveScore() {
     renderMatchCard(m, tmp);
     parent.appendChild(tmp.firstChild);
     applyFilters();
+  }
+  // Re-render complet pour propager les équipes dans les autres vues
+  if (isKO) {
+    try { if (typeof renderCalendar === 'function') renderCalendar(); } catch(e) {}
+    try { if (typeof renderToday === 'function') renderToday(); } catch(e) {}
   }
   const _vs = $('view-starred');
   if (_vs && _vs.style.display !== 'none') renderStarred();
@@ -1622,6 +1669,27 @@ let _planeLoopTimer = null;
 let _planeBusy = false;
 
 // Détermine le perdant d'un match KO et l'ajoute aux éliminés
+// Détecte le perdant d'un match KO (data.js) et lance son avion d'adieu
+function checkEliminationPlane(matchId) {
+  const m = MATCHES.find(x => x.id === matchId);
+  if (!m) return;
+  if (!['F16','F8','QF','SF','TP','FIN'].includes(m.group)) return;
+  if (isPlaceholderKO(m.home) || isPlaceholderKO(m.away)) return;
+  const s = SCORES[matchId];
+  if (!s) return;
+  const sh = parseInt(s.home), sa = parseInt(s.away);
+  if (isNaN(sh) || isNaN(sa)) return;
+  let loser = null;
+  if (sh > sa) loser = m.away;
+  else if (sa > sh) loser = m.home;
+  else {
+    if (s.pen === 'home') loser = m.away;
+    else if (s.pen === 'away') loser = m.home;
+    else return;
+  }
+  if (loser) queueEliminationPlane(loser);
+}
+
 function checkEliminationFlyout(koId) {
   const ko = KO_STATE[koId];
   if (!ko) return;
@@ -1667,26 +1735,25 @@ function startPlaneLoop() {
 
 // Restaure la liste des éliminés au chargement et relance la boucle
 function initEliminationPlanes() {
-  // Recalculer tous les éliminés à partir des scores KO déjà saisis
-  const isPh = v => /^(1er Gr\.|2e Gr\.|3e Gr\.|Vainq\.|Perdant )/.test(v || '');
   const found = [];
-  Object.values(KO_STATE).forEach(ko => {
-    if (!ko || !ko.home || !ko.away) return;
-    if (isPh(ko.home) || isPh(ko.away)) return;
-    const sh = parseInt(ko.scoreH), sa = parseInt(ko.scoreA);
+  MATCHES.forEach(m => {
+    if (!['F16','F8','QF','SF','TP','FIN'].includes(m.group)) return;
+    if (isPlaceholderKO(m.home) || isPlaceholderKO(m.away)) return;
+    const s = SCORES[m.id];
+    if (!s) return;
+    const sh = parseInt(s.home), sa = parseInt(s.away);
     if (isNaN(sh) || isNaN(sa)) return;
     let loser = null;
-    if (sh > sa) loser = ko.away;
-    else if (sa > sh) loser = ko.home;
+    if (sh > sa) loser = m.away;
+    else if (sa > sh) loser = m.home;
     else {
-      if (ko.penWinner === 'home') loser = ko.away;
-      else if (ko.penWinner === 'away') loser = ko.home;
+      if (s.pen === 'home') loser = m.away;
+      else if (s.pen === 'away') loser = m.home;
     }
     if (loser && !found.includes(loser)) found.push(loser);
   });
   if (found.length) {
     _eliminatedTeams = found;
-    try { saveState({ eliminated: _eliminatedTeams }); } catch(e) {}
     startPlaneLoop();
   }
 }
@@ -3223,10 +3290,10 @@ function checkLiveMatches() {
   });
 }
 
+applyKOTeams();
 renderToday();
 renderCalendar();
 renderGroups();
-renderBracket();
 initExtraFilters();
 setInterval(checkLiveMatches, 60000);
 setTimeout(checkLiveMatches, 1000);
@@ -3343,10 +3410,24 @@ window._applyFbScores = function(fbScores) {
         scorers: scoreObj.scorers || [],
         mvp: scoreObj.mvp || null
       };
+      // Préserver les infos de phase finale (équipes éditées + tirs au but)
+      if (scoreObj.homeTeam) SCORES[id].homeTeam = scoreObj.homeTeam;
+      if (scoreObj.awayTeam) SCORES[id].awayTeam = scoreObj.awayTeam;
+      if (scoreObj.pen) SCORES[id].pen = scoreObj.pen;
+    } else if (scoreObj && (scoreObj.homeTeam || scoreObj.awayTeam)) {
+      // Équipes KO saisies sans score
+      SCORES[id] = SCORES[id] || { scorers: [] };
+      if (scoreObj.homeTeam) SCORES[id].homeTeam = scoreObj.homeTeam;
+      if (scoreObj.awayTeam) SCORES[id].awayTeam = scoreObj.awayTeam;
     }
   });
+  // Appliquer les équipes KO éditées aux matchs (phase finale)
+  try { if (typeof applyKOTeams === 'function') applyKOTeams(); } catch(e) {}
   // Propager les vainqueurs en phase finale (8es -> finale)
   try { propagateKnockout(); } catch(e) {}
+  // Rafraîchir le match du jour et le calendrier (équipes KO mises à jour)
+  try { if (typeof renderToday === 'function') { const vt = $('view-today'); if (vt && vt.style.display !== 'none') renderToday(); } } catch(e) {}
+  try { if (typeof renderCalendar === 'function') { const vc = $('view-calendar'); if (vc && vc.style.display !== 'none') renderCalendar(); } } catch(e) {}
   // Rafraîchit l'affichage des cartes visibles
   try {
     document.querySelectorAll('.match-card[data-id]').forEach(card => {
