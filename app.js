@@ -1852,6 +1852,10 @@ function saveKOMatch() {
     scorers: scorers,
   };
   saveState({ ko: KO_STATE });
+  // Publier sur Firebase pour TOUS les visiteurs
+  if (window.fbSaveKO) {
+    try { window.fbSaveKO(currentKOId, KO_STATE[currentKOId]); } catch(e) {}
+  }
   // Faire monter les vainqueurs au tour suivant (cascade)
   if (typeof propagateWinners === 'function') {
     try { propagateWinners(); } catch(e) {}
@@ -1870,8 +1874,12 @@ function saveKOMatch() {
 
 function clearKOMatch() {
   if (!currentKOId) return;
-  delete KO_STATE[currentKOId];
+  const idToClear = currentKOId;
+  delete KO_STATE[idToClear];
   saveState({ ko: KO_STATE });
+  if (window.fbSaveKO) {
+    try { window.fbSaveKO(idToClear, null); } catch(e) {}
+  }
   renderBracket();
   closeKOModal();
 }
@@ -3358,6 +3366,29 @@ window._applyFbScores = function(fbScores) {
   try { if (typeof renderGroups === 'function') renderGroups(); } catch(e) {}
   try { if (typeof renderScorers === 'function') renderScorers(); } catch(e) {}
   try { if (typeof renderBestThirds === 'function') renderBestThirds(); } catch(e) {}
+};
+
+// ── Réception du bracket (phase finale) depuis Firebase, pour TOUS ──
+window._applyFbKO = function(fbKO) {
+  if (!fbKO) return;
+  // Fusionne les données KO de Firebase dans KO_STATE local
+  Object.entries(fbKO).forEach(([koId, koObj]) => {
+    if (koObj && typeof koObj === 'object') {
+      KO_STATE[koId] = Object.assign({}, KO_STATE[koId] || {}, koObj);
+    }
+  });
+  try { saveState({ ko: KO_STATE }); } catch(e) {}
+  try { if (typeof propagateWinners === 'function') propagateWinners(); } catch(e) {}
+  // Rafraîchit le bracket, le match du jour et les buteurs si visibles
+  try { if (typeof renderBracket === 'function') renderBracket(); } catch(e) {}
+  try {
+    const vt = $('view-today');
+    if (vt && vt.style.display !== 'none' && typeof renderToday === 'function') renderToday();
+  } catch(e) {}
+  try {
+    const vs = $('view-scorers');
+    if (vs && vs.style.display !== 'none' && typeof renderScorers === 'function') renderScorers();
+  } catch(e) {}
 };
 
 // ── Accès admin secret : triple clic sur le ballon ⚽ ──────────────────

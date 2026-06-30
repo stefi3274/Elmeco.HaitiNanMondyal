@@ -137,6 +137,25 @@
     return set(ref(db, 'scores/' + matchId), scoreObj);
   };
 
+  // ── Sync bracket (phase finale) depuis Firebase, pour TOUS ──
+  function syncKO() {
+    onValue(ref(db, 'ko'), snap => {
+      const data = snap.val() || {};
+      window._fbKO = data;
+      if (typeof window._applyFbKO === 'function') {
+        window._applyFbKO(data);
+      }
+    });
+  }
+
+  // ── Écriture d'un match de phase finale vers Firebase (réservé admin) ──
+  window.fbSaveKO = function(koId, koObj) {
+    if (koObj === null || koObj === undefined) {
+      return remove(ref(db, 'ko/' + koId));
+    }
+    return set(ref(db, 'ko/' + koId), koObj);
+  };
+
   // ── Sync commentaires depuis Firebase ──
   function syncComments() {
     onValue(ref(db, 'comments'), snap => {
@@ -239,6 +258,7 @@
     syncReactions();
    // syncComments();
     syncScores();
+    syncKO();
     syncPronos();
     syncUsers();
   });
