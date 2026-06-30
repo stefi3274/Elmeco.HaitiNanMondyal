@@ -199,7 +199,7 @@ function renderMatchCard(m, container) {
         <div class="team-flag${m.home === 'Haïti' ? ' flag-haiti' : ''}">${getFlag(m.home)}</div>
         <div class="team-name" style="text-decoration:underline dotted;text-underline-offset:3px;">${m.home}</div>
       </div>
-      <div class="score-btn" onclick="event.stopPropagation(); if(window.adminAuthenticated){ toggleScoreEditor(${m.id}, this); } else if(typeof openAdmin==='function' && false){ } " title="${'Score'}">
+      <div class="score-btn" onclick="event.stopPropagation(); if(window.adminAuthenticated){ openModal(${m.id}); }" title="${'Score'}">
         <span class="score-btn-label">Score</span>
         <span class="${score && score.home !== null && score.home !== undefined && score.home !== '' ? 'score-btn-current' : 'score-btn-vs'}" id="vs-display-${m.id}">
           ${score && score.home !== null && score.home !== undefined && score.home !== '' ? score.home + '–' + score.away : 'VS'}
@@ -1074,7 +1074,7 @@ function openModal(matchId) {
   const isKO = ['F16','F8','QF','SF','TP','FIN'].includes(m.group);
   const koTeams = $('koTeamsSection');
   if (koTeams) {
-    koTeams.style.display = isKO ? 'block' : 'none';
+    koTeams.style.display = (isKO && window.adminAuthenticated) ? 'block' : 'none';
     if (isKO) {
       // Pré-remplir avec les équipes déjà saisies (ou vide si placeholder)
       $('mHomeTeamInput').value = isPlaceholderKO(m.home) ? '' : m.home;
@@ -1104,6 +1104,10 @@ function openModal(matchId) {
   if (score && score.scorers && score.scorers.length) {
     score.scorers.forEach(s => addScorerRow(s));
   }
+
+  // Boutons d'enregistrement réservés à l'admin
+  const footer = document.querySelector('#modal .modal-footer');
+  if (footer) footer.style.display = window.adminAuthenticated ? 'flex' : 'none';
 
   $('modalOverlay').classList.add('open');
   $('mScoreHome').focus();
