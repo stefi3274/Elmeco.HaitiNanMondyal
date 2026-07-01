@@ -1110,14 +1110,35 @@
         </div>
       </div>
 
-      <!-- Tirs au but (phase finale, si match nul) -->
+      <!-- Prolongation & Tirs au but (phase finale, si match nul) -->
       <div id="koPenaltySection" style="display:none;margin:14px 0;padding:12px;background:rgba(212,33,61,0.08);border:1px solid rgba(212,33,61,0.25);border-radius:10px;">
-        <div style="font-family:var(--font-ui);font-size:12px;font-weight:700;color:#d4213d;margin-bottom:10px;">🥅 Match nul — Qui se qualifie aux tirs au but ?</div>
-        <select id="mPenWinner" style="width:100%;padding:9px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:14px;">
-          <option value="">-- À déterminer --</option>
-          <option value="home" id="mPenHomeOpt">Domicile</option>
-          <option value="away" id="mPenAwayOpt">Extérieur</option>
-        </select>
+        <!-- Après prolongation -->
+        <div style="font-family:var(--font-ui);font-size:12px;font-weight:700;color:#d4213d;margin-bottom:8px;">⏱️ Après prolongation (AP) — si joué</div>
+        <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:14px;">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
+            <span id="mApHomeLabel" style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;">Domicile</span>
+            <input class="score-input" id="mApScoreHome" type="number" min="0" max="30" placeholder="–" style="width:56px;height:56px;font-size:28px;">
+          </div>
+          <span style="font-family:var(--font-display);font-size:22px;color:var(--text2);margin-top:16px;">–</span>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
+            <span id="mApAwayLabel" style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;">Extérieur</span>
+            <input class="score-input" id="mApScoreAway" type="number" min="0" max="30" placeholder="–" style="width:56px;height:56px;font-size:28px;">
+          </div>
+        </div>
+        <!-- Tirs au but -->
+        <div style="font-family:var(--font-ui);font-size:12px;font-weight:700;color:#d4213d;margin-bottom:8px;border-top:1px solid rgba(212,33,61,0.2);padding-top:12px;">🥅 Tirs au but (TAB) — si toujours nul</div>
+        <div style="display:flex;align-items:center;justify-content:center;gap:12px;">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
+            <span id="mPenHomeLabel" style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;">Domicile</span>
+            <input class="score-input" id="mPenScoreHome" type="number" min="0" max="30" placeholder="–" style="width:56px;height:56px;font-size:28px;">
+          </div>
+          <span style="font-family:var(--font-display);font-size:22px;color:var(--text2);margin-top:16px;">–</span>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
+            <span id="mPenAwayLabel" style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;">Extérieur</span>
+            <input class="score-input" id="mPenScoreAway" type="number" min="0" max="30" placeholder="–" style="width:56px;height:56px;font-size:28px;">
+          </div>
+        </div>
+        <div id="mPenWinnerLabel" style="text-align:center;margin-top:12px;font-family:var(--font-ui);font-size:12px;color:var(--accent);font-weight:700;"></div>
       </div>
 
       <!-- Scorers -->

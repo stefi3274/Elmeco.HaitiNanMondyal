@@ -173,12 +173,21 @@ function renderMatchCard(m, container) {
       if (hh > aa) { homeRes = 'res-win'; awayRes = 'res-loss'; }
       else if (hh < aa) { homeRes = 'res-loss'; awayRes = 'res-win'; }
     }
+    // Détail prolongation / tirs au but (matchs KO)
+    let koDetail = '';
+    if (score.apHome != null && score.apAway != null) {
+      koDetail += `<span style="color:var(--text2);font-size:11px;">${score.apHome}–${score.apAway} a.p.</span>`;
+    }
+    if (score.penHome != null && score.penAway != null) {
+      koDetail += `${koDetail ? ' · ' : ''}<span style="color:#d4213d;font-size:11px;font-weight:700;">TAB ${score.penHome}–${score.penAway}</span>`;
+    }
     scoreHTML = `
       <div class="score-badge">
         <span class="score-num ${homeRes}">${score.home}</span>
         <span class="score-sep">–</span>
         <span class="score-num ${awayRes}">${score.away}</span>
       </div>
+      ${koDetail ? `<div style="text-align:center;margin-top:2px;">${koDetail}</div>` : ''}
       ${scorersText ? `<div class="score-scorers">${scorersText}</div>` : ''}
       <div class="edit-hint">✏ modifier</div>
     `;
@@ -1088,16 +1097,25 @@ function openModal(matchId) {
   $('mScoreHome').value = score ? score.home : '';
   $('mScoreAway').value = score ? score.away : '';
 
-  // Tirs au but (KO uniquement)
+  // Prolongation + Tirs au but (KO uniquement)
   const koPen = $('koPenaltySection');
   if (koPen) {
-    $('mPenHomeOpt').textContent = (m.home && !isPlaceholderKO(m.home)) ? m.home : 'Domicile';
-    $('mPenAwayOpt').textContent = (m.away && !isPlaceholderKO(m.away)) ? m.away : 'Extérieur';
-    $('mPenWinner').value = score && score.pen ? score.pen : '';
+    const homeLbl = (m.home && !isPlaceholderKO(m.home)) ? m.home : 'Domicile';
+    const awayLbl = (m.away && !isPlaceholderKO(m.away)) ? m.away : 'Extérieur';
+    ['mApHomeLabel','mPenHomeLabel'].forEach(id => { if ($(id)) $(id).textContent = homeLbl; });
+    ['mApAwayLabel','mPenAwayLabel'].forEach(id => { if ($(id)) $(id).textContent = awayLbl; });
+    if ($('mApScoreHome')) $('mApScoreHome').value = (score && score.apHome != null) ? score.apHome : '';
+    if ($('mApScoreAway')) $('mApScoreAway').value = (score && score.apAway != null) ? score.apAway : '';
+    if ($('mPenScoreHome')) $('mPenScoreHome').value = (score && score.penHome != null) ? score.penHome : '';
+    if ($('mPenScoreAway')) $('mPenScoreAway').value = (score && score.penAway != null) ? score.penAway : '';
     updateModalPenaltyVisibility();
+    updatePenWinnerLabel();
   }
-  $('mScoreHome').oninput = updateModalPenaltyVisibility;
-  $('mScoreAway').oninput = updateModalPenaltyVisibility;
+  $('mScoreHome').oninput = () => { updateModalPenaltyVisibility(); updatePenWinnerLabel(); };
+  $('mScoreAway').oninput = () => { updateModalPenaltyVisibility(); updatePenWinnerLabel(); };
+  ['mApScoreHome','mApScoreAway','mPenScoreHome','mPenScoreAway'].forEach(id => {
+    if ($(id)) $(id).oninput = updatePenWinnerLabel;
+  });
 
   const list = $('scorersList');
   list.innerHTML = '';
@@ -1135,6 +1153,31 @@ function updateModalPenaltyVisibility() {
   const sh = $('mScoreHome').value, sa = $('mScoreAway').value;
   const isDraw = sh !== '' && sa !== '' && parseInt(sh) === parseInt(sa);
   koPen.style.display = (isKO && isDraw) ? 'block' : 'none';
+}
+
+// Affiche qui se qualifie selon la dernière phase remplie (normal < AP < TAB)
+function updatePenWinnerLabel() {
+  const lbl = $('mPenWinnerLabel');
+  if (!lbl) return;
+  const m = MATCHES.find(x => x.id === currentModalId);
+  if (!m) { lbl.textContent = ''; return; }
+  const homeLbl = (m.home && !isPlaceholderKO(m.home)) ? m.home : 'Domicile';
+  const awayLbl = (m.away && !isPlaceholderKO(m.away)) ? m.away : 'Extérieur';
+  const val = id => { const el = $(id); return el && el.value !== '' ? parseInt(el.value) : null; };
+
+  // Priorité : TAB > AP > normal
+  let wh, wa, phase;
+  const ph = val('mPenScoreHome'), pa = val('mPenScoreAway');
+  const ah = val('mApScoreHome'), aa = val('mApScoreAway');
+  const nh = val('mScoreHome'), na = val('mScoreAway');
+  if (ph != null && pa != null) { wh = ph; wa = pa; phase = 'aux tirs au but'; }
+  else if (ah != null && aa != null) { wh = ah; wa = aa; phase = 'après prolongation'; }
+  else if (nh != null && na != null) { wh = nh; wa = na; phase = ''; }
+  else { lbl.textContent = ''; return; }
+
+  if (wh > wa) lbl.textContent = '✅ ' + homeLbl + ' se qualifie ' + phase;
+  else if (wa > wh) lbl.textContent = '✅ ' + awayLbl + ' se qualifie ' + phase;
+  else lbl.textContent = '⚠️ Toujours à égalité';
 }
 
 function closeModal() {
@@ -1183,15 +1226,22 @@ function saveScore() {
   const isKO = m && ['F16','F8','QF','SF','TP','FIN'].includes(m.group);
 
   // Pour les matchs KO : appliquer les équipes saisies
-  let koHomeTeam, koAwayTeam, koPen;
+  let koHomeTeam, koAwayTeam, apHome, apAway, penHome, penAway;
   if (isKO) {
     const ht = $('mHomeTeamInput') ? $('mHomeTeamInput').value.trim() : '';
     const at = $('mAwayTeamInput') ? $('mAwayTeamInput').value.trim() : '';
     if (ht) { m.home = ht; koHomeTeam = ht; }
     if (at) { m.away = at; koAwayTeam = at; }
-    // Tirs au but si match nul
+    // Score après prolongation et tirs au but (si match nul en temps réglementaire)
     if (homeVal !== '' && awayVal !== '' && parseInt(homeVal) === parseInt(awayVal)) {
-      koPen = $('mPenWinner') ? $('mPenWinner').value : '';
+      const ah = $('mApScoreHome') ? $('mApScoreHome').value : '';
+      const aa = $('mApScoreAway') ? $('mApScoreAway').value : '';
+      const ph = $('mPenScoreHome') ? $('mPenScoreHome').value : '';
+      const pa = $('mPenScoreAway') ? $('mPenScoreAway').value : '';
+      if (ah !== '') apHome = parseInt(ah);
+      if (aa !== '') apAway = parseInt(aa);
+      if (ph !== '') penHome = parseInt(ph);
+      if (pa !== '') penAway = parseInt(pa);
     }
   }
 
@@ -1201,9 +1251,11 @@ function saveScore() {
       away: parseInt(awayVal),
       scorers
     };
-    if (koPen) SCORES[currentModalId].pen = koPen;
+    if (apHome != null) SCORES[currentModalId].apHome = apHome;
+    if (apAway != null) SCORES[currentModalId].apAway = apAway;
+    if (penHome != null) SCORES[currentModalId].penHome = penHome;
+    if (penAway != null) SCORES[currentModalId].penAway = penAway;
   } else if (isKO && (koHomeTeam || koAwayTeam)) {
-    // Équipes saisies sans score encore : on garde quand même un enregistrement
     SCORES[currentModalId] = SCORES[currentModalId] || { scorers: [] };
   }
   // Mémoriser les équipes KO dans SCORES (persisté + Firebase) pour survivre au rechargement
@@ -1706,18 +1758,8 @@ function checkEliminationPlane(matchId) {
   if (!['F16','F8','QF','SF','TP','FIN'].includes(m.group)) return;
   if (isPlaceholderKO(m.home) || isPlaceholderKO(m.away)) return;
   const s = SCORES[matchId];
-  if (!s) return;
-  const sh = parseInt(s.home), sa = parseInt(s.away);
-  if (isNaN(sh) || isNaN(sa)) return;
-  let loser = null;
-  if (sh > sa) loser = m.away;
-  else if (sa > sh) loser = m.home;
-  else {
-    if (s.pen === 'home') loser = m.away;
-    else if (s.pen === 'away') loser = m.home;
-    else return;
-  }
-  if (loser) queueEliminationPlane(loser);
+  const res = koWinnerLoser(m, s);
+  if (res && res.loser) queueEliminationPlane(res.loser);
 }
 
 function checkEliminationFlyout(koId) {
@@ -1770,17 +1812,8 @@ function initEliminationPlanes() {
     if (!['F16','F8','QF','SF','TP','FIN'].includes(m.group)) return;
     if (isPlaceholderKO(m.home) || isPlaceholderKO(m.away)) return;
     const s = SCORES[m.id];
-    if (!s) return;
-    const sh = parseInt(s.home), sa = parseInt(s.away);
-    if (isNaN(sh) || isNaN(sa)) return;
-    let loser = null;
-    if (sh > sa) loser = m.away;
-    else if (sa > sh) loser = m.home;
-    else {
-      if (s.pen === 'home') loser = m.away;
-      else if (s.pen === 'away') loser = m.home;
-    }
-    if (loser && !found.includes(loser)) found.push(loser);
+    const res = koWinnerLoser(m, s);
+    if (res && res.loser && !found.includes(res.loser)) found.push(res.loser);
   });
   if (found.length) {
     _eliminatedTeams = found;
@@ -3378,31 +3411,35 @@ document.querySelectorAll('.filter-btn:not(:first-child)').forEach(btn => {
 
 // ── Propagation automatique des vainqueurs en phase finale (8es -> finale) ──
 // Quand un match KO a un score, on remplace W{id} / L{id} dans les matchs suivants.
+// Détermine {winner, loser} d'un match KO selon la dernière phase remplie
+// Priorité : tirs au but (penHome/penAway) > prolongation (apHome/apAway) > normal
+function koWinnerLoser(m, s) {
+  if (!s) return null;
+  const num = v => (v === '' || v === null || v === undefined) ? null : parseInt(v);
+  let h, a;
+  const ph = num(s.penHome), pa = num(s.penAway);
+  const ah = num(s.apHome), aa = num(s.apAway);
+  const nh = num(s.home), na = num(s.away);
+  if (ph != null && pa != null && !isNaN(ph) && !isNaN(pa)) { h = ph; a = pa; }
+  else if (ah != null && aa != null && !isNaN(ah) && !isNaN(aa)) { h = ah; a = aa; }
+  else if (nh != null && na != null && !isNaN(nh) && !isNaN(na)) { h = nh; a = na; }
+  else return null;
+  if (h > a) return { winner: m.home, loser: m.away };
+  if (a > h) return { winner: m.away, loser: m.home };
+  return null; // toujours nul, pas de vainqueur
+}
+
 function propagateKnockout() {
   if (typeof MATCHES === 'undefined') return;
   let changed = false;
-  // Pour chaque match de phase finale terminé, calculer vainqueur/perdant
-  const winners = {}; // numéro -> nom équipe
+  const winners = {};
   const losers = {};
   MATCHES.forEach(m => {
     if (!['F16','F8','QF','SF','TP','FIN'].includes(m.group)) return;
     const s = SCORES[m.id];
-    if (!s || s.home === '' || s.home === null || s.home === undefined) return;
-    const h = parseInt(s.home), a = parseInt(s.away);
-    if (isNaN(h) || isNaN(a)) return;
-    // Ne pas propager si les équipes sont encore des placeholders
-    const homeIsPlaceholder = /^[WL]?\d/.test(m.home) || m.home.includes('/') || /^[12]/.test(m.home) || /^[GH][12]/.test(m.home);
-    const awayIsPlaceholder = /^[WL]?\d/.test(m.away) || m.away.includes('/') || /^[12]/.test(m.away) || /^[GH][12]/.test(m.away);
-    let winner = null, loser = null;
-    if (h > a) { winner = m.home; loser = m.away; }
-    else if (h < a) { winner = m.away; loser = m.home; }
-    else {
-      // Égalité : vainqueur déterminé par tirs au but (champ s.pen: 'home'|'away')
-      if (s.pen === 'home') { winner = m.home; loser = m.away; }
-      else if (s.pen === 'away') { winner = m.away; loser = m.home; }
-      else return; // pas de vainqueur défini, on ne propage pas
-    }
-    // N'enregistrer que si le vainqueur n'est pas lui-même un placeholder non résolu
+    const res = koWinnerLoser(m, s);
+    if (!res) return;
+    const winner = res.winner, loser = res.loser;
     if (winner && !winner.includes('/') && !/^[WL]\d/.test(winner)) {
       winners[m.id] = winner;
       losers[m.id] = loser;
